@@ -1,3 +1,4 @@
+# version: 1.0
 #
 # Epic Systems.ps1 - Epic Systems
 #
@@ -220,13 +221,10 @@ function Idm-UsersRead {
 <GetUserRecords xmlns="urn:epicsystems-com:Core.2008-04.Services">
     <ConnectionFunctionalType/>
     <SearchCriteria>
-        <INI>EMP</INI>
-        <SearchString></SearchString>
-        <SkipEnRol>false</SkipEnRol>
-        <SoundsLikeMode>UseIfNeeded</SoundsLikeMode>
+        <SearchString/>
     </SearchCriteria>
-    $searchStateXml
-    <UserID>1</UserID>
+    $($searchStateXml)
+    <UserID>$($system_params.username)</UserID>
 </GetUserRecords>
 "@
 
