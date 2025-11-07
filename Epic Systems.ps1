@@ -1,15 +1,10 @@
-# version: 1.0
 #
-# Vector Solutions SafeSchools.ps1 - Vector Solution SafeSchools
+# Epic Systems.ps1 - Epic Systems
 #
 $Log_MaskableKeys = @(
     'password',
-    "proxy_password",
-    "clientsecret"
+    "proxy_password"
 )
-
-$Global:PeopleCacheTime = Get-Date
-$Global:People = [System.Collections.ArrayList]@()
 
 $Properties = @{
     User = @(
@@ -227,7 +222,6 @@ function Idm-UsersRead {
     <SearchCriteria>
         <INI>EMP</INI>
         <SearchString></SearchString>
-        <RecordState>Active</RecordState>
         <SkipEnRol>false</SkipEnRol>
         <SoundsLikeMode>UseIfNeeded</SoundsLikeMode>
     </SearchCriteria>
