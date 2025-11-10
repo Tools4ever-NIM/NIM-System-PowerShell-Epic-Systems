@@ -7,10 +7,7 @@ $Log_MaskableKeys = @(
     "proxy_password"
 )
 
-$Global:UserCacheTime = Get-Date
 $Global:User = [System.Collections.ArrayList]@()
-
-$Global:UserInfoCacheTime = Get-Date
 $Global:UserInfo = [System.Collections.ArrayList]@()
 $Global:UserInfo_UserIDs = [System.Collections.ArrayList]@()
 $Global:UserInfo_UserRoleIDs = [System.Collections.ArrayList]@()
@@ -206,13 +203,6 @@ function Idm-SystemInfo {
                 value = 5
             }
             @{
-                name = 'pageSize'
-                type = 'textbox'
-                label = 'Page Size'
-                description = 'Size of each request page'
-                value = 1000
-            }
-            @{
                 name = 'retryDelay'
                 type = 'textbox'
                 label = 'Seconds to wait for retry'
@@ -280,7 +270,7 @@ function Idm-UsersRead {
         }
 
         # Refresh cache if needed
-        if ($script:User.Count -eq 0 -or ((Get-Date) - $script:UserCacheTime).TotalMinutes -gt 5) {
+        if ($script:User.Count -eq 0) {
             $Global:User.Clear()
             $properties = Get-ClassProperties -Class $Class -IncludeHidden $true
 
@@ -366,6 +356,7 @@ function Idm-UsersRead {
 
                 # Continue if any values are non-empty
                 $hasMore = ($searchStateContext.Identifier -or $searchStateContext.ResumeInfo -or $searchStateContext.CriteriaHash)
+#break
             } while ($hasMore)
 
             $Global:UsersCacheTime = Get-Date
@@ -393,7 +384,7 @@ function Idm-UserGroupsRead {
         }
 
         # Refresh cache if needed
-        if ($Global:Users.Count -eq 0 -or ((Get-Date) - $Global:UsersCacheTime).TotalMinutes -gt 5) {
+        if ($Global:Users.Count -eq 0) {
             Idm-UsersRead -SystemParams $SystemParams -FunctionParams $FunctionParams | Out-Null
         }
 
@@ -507,7 +498,7 @@ function Idm-UserInfoRead {
         }
 
         # Refresh cache if needed
-        if ($Global:Users.Count -eq 0 -or ((Get-Date) - $Global:UsersCacheTime).TotalMinutes -gt 5) {
+        if ($Global:Users.Count -eq 0) {
             Idm-UsersRead -SystemParams $SystemParams -FunctionParams $FunctionParams | Out-Null
         }
 
@@ -701,7 +692,7 @@ function Idm-UserInfo_UserIDsRead {
         }
 
         # Refresh cache if needed
-        if ($Global:UserInfo.Count -eq 0 -or ((Get-Date) - $Global:UserInfoCacheTime).TotalMinutes -gt 5) {
+        if ($Global:UserInfo.Count -eq 0) {
             Idm-UserInfoRead -SystemParams $SystemParams -FunctionParams $FunctionParams | Out-Null
         }
 
@@ -727,7 +718,7 @@ function Idm-UserInfo_UserRoleIDsRead {
         }
 
         # Refresh cache if needed
-        if ($Global:UserInfo.Count -eq 0 -or ((Get-Date) - $Global:UserInfoCacheTime).TotalMinutes -gt 5) {
+        if ($Global:UserInfo.Count -eq 0) {
             Idm-UserInfoRead -SystemParams $SystemParams -FunctionParams $FunctionParams | Out-Null
         }
 
@@ -753,7 +744,7 @@ function Idm-UserInfo_LinkedTemplatesConfigRead {
         }
 
         # Refresh cache if needed
-        if ($Global:UserInfo.Count -eq 0 -or ((Get-Date) - $Global:UserInfoCacheTime).TotalMinutes -gt 5) {
+        if ($Global:UserInfo.Count -eq 0) {
             Idm-UserInfoRead -SystemParams $SystemParams -FunctionParams $FunctionParams | Out-Null
         }
 
@@ -779,7 +770,7 @@ function Idm-UserInfo_UserSubtemplateIDsRead {
         }
 
         # Refresh cache if needed
-        if ($Global:UserInfo.Count -eq 0 -or ((Get-Date) - $Global:UserInfoCacheTime).TotalMinutes -gt 5) {
+        if ($Global:UserInfo.Count -eq 0) {
             Idm-UserInfoRead -SystemParams $SystemParams -FunctionParams $FunctionParams | Out-Null
         }
 
@@ -805,12 +796,13 @@ function Idm-UserInfo_LinkedProviderIDRead {
         }
 
         # Refresh cache if needed
-        if ($Global:UserInfo.Count -eq 0 -or ((Get-Date) - $Global:UserInfoCacheTime).TotalMinutes -gt 5) {
+        if ($Global:UserInfo.Count -eq 0) {
             Idm-UserInfoRead -SystemParams $SystemParams -FunctionParams $FunctionParams | Out-Null
         }
 
         $Global:UserInfo_LinkedProviderID
 }
+
 #
 #   Internal Functions
 #
