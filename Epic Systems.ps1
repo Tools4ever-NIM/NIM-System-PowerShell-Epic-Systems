@@ -10,6 +10,14 @@ $Log_MaskableKeys = @(
 $Global:UserCacheTime = Get-Date
 $Global:User = [System.Collections.ArrayList]@()
 
+$Global:UserInfoCacheTime = Get-Date
+$Global:UserInfo = [System.Collections.ArrayList]@()
+$Global:UserInfo_UserIDs = [System.Collections.ArrayList]@()
+$Global:UserInfo_UserRoleIDs = [System.Collections.ArrayList]@()
+$Global:UserInfo_LinkedTemplatesConfig = [System.Collections.ArrayList]@()
+$Global:UserInfo_UserSubtemplateIDs = [System.Collections.ArrayList]@()
+$Global:UserInfo_LinkedProviderID = [System.Collections.ArrayList]@()
+
 $Properties = @{
     User = @(
         @{ name = 'ID';              type = 'string';   objectfields = $null;             options = @('default','key') },
@@ -21,6 +29,77 @@ $Properties = @{
     UserGroup = @(
         @{ name = 'UserID';              type = 'string';   objectfields = $null;             options = @('default') },
         @{ name = 'Group';              type = 'string';   objectfields = $null;             options = @('default') }
+    )
+    UserInfo = @(
+        @{ name = 'UserID';            type = 'string';   objectfields = $null;             options = @('default','key') },
+        @{ name = 'Name';            type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'ContactComment';            type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'LDAPOverrideID';            type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'IsPasswordChangeRequired';            type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'IsActive';            type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'StartDate';            type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'EndDate';            type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'UserAlias';            type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'UserPhotoPath';            type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'Sex';            type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'ReportGrouper1';            type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'ReportGrouper2';            type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'ReportGrouper3';            type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'CategoryReportGrouper1';            type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'CategoryReportGrouper2';            type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'CategoryReportGrouper3';            type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'CategoryReportGrouper4';            type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'CategoryReportGrouper5';            type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'CategoryReportGrouper6';            type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'Notes';            type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'InBasketClassifications';            type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'UserDirectoryPath';            type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'ProviderAtLoginOption';            type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'UserComplexName';            type = 'object';   objectfields = @('FirstName','GivenNameInitials','MiddleName','LastName','LastNamePrefix','SpouseLastName','SpousePrefix','Suffix','AcademicTitle','PrimaryTitle','SpouseLastNameFirst','FatherName','GrandfatherName');             options = @('default') },
+        @{ name = 'AuthenticationConfigurationID';            type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'BlockStatus';            type = 'object';   objectfields = @('IsBlocked','Reason','Comment');             options = @('default') },
+        @{ name = 'EmployeeDemographics';            type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'PrimaryManager';            type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'UsersManagers';            type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'DefaultLoginDepartmentID';            type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'CustomUserDictionaries';            type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'ExternalIdentifiers';            type = 'string';   objectfields = $null;             options = @('default') }
+
+        #Object arrays
+        #@{ name = 'UserIDs';            type = 'string';   objectfields = $null;             options = @('default') },
+        #@{ name = 'LinkedTemplatesConfig';            type = 'string';   objectfields = $null;             options = @('default') },
+        #@{ name = 'AppliedTemplateID';            type = 'string';   objectfields = $null;             options = @('default') },
+        #@{ name = 'AvailableLinkableTemplates';            type = 'string';   objectfields = $null;             options = @('default') },
+        #@{ name = 'UserSubtemplateIDs';            type = 'string';   objectfields = $null;             options = @('default') },
+        #@{ name = 'UserRoleIDs';            type = 'string';   objectfields = $null;             options = @('default') },
+        #@{ name = 'LinkedProviderID';            type = 'string';   objectfields = $null;             options = @('default') },
+    )
+    UserInfo_UserID = @(
+        @{ name = 'UserID';              type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'ID';              type = 'string';   objectfields = $null;             options = @('default') }
+        @{ name = 'Type';              type = 'string';   objectfields = $null;             options = @('default') }
+    )
+    
+    UserInfo_UserRoleID = @(
+        @{ name = 'UserID';              type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'ID';              type = 'string';   objectfields = $null;             options = @('default') }
+        @{ name = 'Type';              type = 'string';   objectfields = $null;             options = @('default') }
+    )
+    UserInfo_LinkedTemplatesConfig = @(
+        @{ name = 'UserID';              type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'ID';              type = 'string';   objectfields = $null;             options = @('default') }
+        @{ name = 'Type';              type = 'string';   objectfields = $null;             options = @('default') }
+        @{ name = 'Area';              type = 'string';   objectfields = $null;             options = @('default') }
+    )
+    UserInfo_UserSubtemplateID = @(
+        @{ name = 'UserID';              type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'ID';              type = 'string';   objectfields = $null;             options = @('default') }
+        @{ name = 'Type';              type = 'string';   objectfields = $null;             options = @('default') }
+    )
+    UserInfo_LinkedProviderID = @(
+        @{ name = 'UserID';              type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'ID';              type = 'string';   objectfields = $null;             options = @('default') }
+        @{ name = 'Type';              type = 'string';   objectfields = $null;             options = @('default') }
     )
 }
 
@@ -139,6 +218,13 @@ function Idm-SystemInfo {
                 label = 'Seconds to wait for retry'
                 description = ''
                 value = 2
+            }
+            @{
+                name = 'nr_of_threads'
+                type = 'textbox'
+                label = 'Max. number of simultaneous requests'
+                description = ''
+                value = 20
             }
             @{
                 name = 'nr_of_sessions'
@@ -281,8 +367,10 @@ function Idm-UsersRead {
                 # Continue if any values are non-empty
                 $hasMore = ($searchStateContext.Identifier -or $searchStateContext.ResumeInfo -or $searchStateContext.CriteriaHash)
             } while ($hasMore)
-        }
 
+            $Global:UsersCacheTime = Get-Date
+        }
+        
         $Global:User
 }
 
@@ -318,34 +406,411 @@ function Idm-UserGroupsRead {
             $template[$prop] = $null
         }
         
-        # TODO: Needs to be converted to be multi-threaded
-        $result = foreach ($item in $Global:User) {
-            $splat = @{
-                SystemParams = $system_params             
-                Uri = '/interconnect-amcurprd-username/api/epic/2016/Security/PersonnelManagement/ViewUserGroups/Personnel/User/Groups/View'
-                Body = (@{ "UserID" = @{ "ID" = $item.ID; "Type"= "EXTERNAL"}}) | ConvertTo-Json
-                Class = $Class
-                LogMessage = "[$($item.ID)]"
+        # Prepare runspace pool
+        $runspacePool = [runspacefactory]::CreateRunspacePool(1, [int]$system_params.nr_of_threads)
+        $runspacePool.Open()
+        $runspaces = @()
+
+        # Index for tracking
+        $index = 0
+
+        $funcDef = "function Execute-Request { $((Get-Command Execute-Request -CommandType Function).ScriptBlock.ToString()) }"
+
+        foreach ($item in $Global:User) {
+            $runspace = [powershell]::Create().AddScript($funcDef).AddScript({
+                param($item, $system_params, $Class, $template, $index)
+                
+                $itemResult = @{
+                    rows = @()
+                    logMessage = $null
+                }
+
+                $splat = @{
+                    SystemParams = $system_params
+                    Method = "POST"
+                    Uri = '/interconnect-amcurprd-username/api/epic/2016/Security/PersonnelManagement/ViewUserGroups/Personnel/User/Groups/View'
+                    Body = (@{ "UserID" = @{ "ID" = $item.ID; "Type"= "EXTERNAL"}}) | ConvertTo-Json
+                    Class = $Class
+                    LogMessage = "[$($item.ID)]"
+                    LoggingEnabled = $false
+                }
+
+                try {
+                    $response = Execute-Request @splat
+                } catch {
+                    $itemResult.logMessage = "Retrieve User Groups [$($item.ID)] - $_"
+                    return $itemResult
+                }
+
+                foreach ($membershipRow in $response.UserGroups) {
+                    $row = New-Object -TypeName PSObject -Property $template
+                    $row.UserID = $item.Id
+                    $row.Group = $membershipRow
+                    $itemResult.rows += $row
+                }
+
+                return $itemResult
+            }).AddArgument($item).AddArgument($system_params).AddArgument($Class).AddArgument($template).AddArgument($index)
+
+            $runspace.RunspacePool = $runspacePool
+            $runspaces += [PSCustomObject]@{ Pipe = $runspace; Status = $runspace.BeginInvoke(); Index = $index }
+            $index++
+        }
+
+        # Collect results
+        $total = $runspaces.Count
+        $completed = 0
+
+        $result = @()
+        foreach ($r in $runspaces) {
+            $output = $r.Pipe.EndInvoke($r.Status)
+            $completed++
+
+            if ($completed % 250 -eq 0 -or $completed -eq $total) {
+                $percent = [math]::Round(($completed / $total) * 100, 2)
+                Log info "Progress: [$completed/$total] requests completed ($percent%)"
             }
-            try {
-                $response = Execute-Request @splat
-            } catch {
-                Log warning "Retrieve User Groups [$($item.ID)] - $_"
+
+            if($null -ne $output.logMessage) {
+                Log verbose $output.logMessage
+            }
+
+            $result += $output.rows
+
+            $r.Pipe.Dispose()
+        }
+
+        $runspacePool.Close()
+        $runspacePool.Dispose()
+
+        # Final output
+        $result
+
+}
+
+function Idm-UserInfoRead {
+    param (
+        # Mode
+        [switch] $GetMeta,    
+        # Parameters
+        [string] $SystemParams,
+        [string] $FunctionParams
+
+    )
+        $system_params   = ConvertFrom-Json2 $SystemParams
+        $function_params = ConvertFrom-Json2 $FunctionParams
+        $Class = 'UserInfo'
+        
+        if ($GetMeta) {
+            Get-ClassMetaData -SystemParams $SystemParams -Class $Class
+            return
+        }
+
+        # Refresh cache if needed
+        if ($Global:Users.Count -eq 0 -or ((Get-Date) - $Global:UsersCacheTime).TotalMinutes -gt 5) {
+            Idm-UsersRead -SystemParams $SystemParams -FunctionParams $FunctionParams | Out-Null
+        }
+
+        $Global:UserInfo.Clear()
+        $Global:UserInfo_UserIDs.Clear()
+
+        # Precompute property template
+        $properties = $Global:Properties.$Class | Where-Object { ('hidden' -notin $_.options ) }
+        $propertiesHT = @{}; $Global:Properties.$Class | ForEach-Object { $propertiesHT[$_.name] = $_ }
+
+        $template = [ordered]@{}
+        foreach ($prop in $properties.Name) {
+            if($propertiesHT[$prop].Type -eq 'object') {
+                foreach($subProperty in $propertiesHT[$prop].objectfields) {
+                    $template["$($prop)_$($subProperty)"] = $null
+                }
                 continue
             }
 
-            foreach($membershipRow in $response.UserGroups) {
-                $row = New-Object -TypeName PSObject -Property $template
-
-                $row.UserID = $item.Id
-                $row.Group = $membershipRow
-
-                $row
-            }
+            $template[$prop] = $null
         }
-        $result
+        
+        # Prepare runspace pool
+        $runspacePool = [runspacefactory]::CreateRunspacePool(1, [int]$system_params.nr_of_threads)
+        $runspacePool.Open()
+        $runspaces = @()
+
+        # Index for tracking
+        $index = 0
+
+        $funcDef = "function Execute-Request { $((Get-Command Execute-Request -CommandType Function).ScriptBlock.ToString()) }"
+
+        foreach ($item in $Global:User) {
+            $runspace = [powershell]::Create().AddScript($funcDef).AddScript({
+                param($item, $system_params, $Class, $template, $index, $properties, $propertiesHT)
+                
+                $itemResult = @{
+                    result = $null
+                    subResultUserIDs = [System.Collections.ArrayList]@()
+                    subResultUserRoleIDs = [System.Collections.ArrayList]@()
+                    subResultLinkedTemplatesConfig = [System.Collections.ArrayList]@()
+                    subResultUserSubtemplateIDs = [System.Collections.ArrayList]@()
+                    subResultLinkedProviderID = [System.Collections.ArrayList]@()
+                    logMessage = $null
+                }
+
+                $splat = @{
+                    SystemParams = $system_params
+                    Uri = "/interconnect-amcurprd-username/api/epic/2014/Security/PersonnelManagement/ViewUser?UserID=$($item.ID)&UserType=EXTERNAL"
+                    Body = $null
+                    Class = $Class
+                    LogMessage = "[$($item.ID)]"
+                    LoggingEnabled = $false
+                }
+
+                try {
+                    $response = Execute-Request @splat
+                } catch {
+                    $itemResult.logMessage = "Retrieve User Info [$($item.ID)] - $_"
+                    return $itemResult
+                }
+
+                $row = New-Object -TypeName PSObject -Property ([ordered]@{} + $template)
+                $row.UserID = $item.ID
+
+                foreach ($prop in $response.PSObject.Properties) {     
+                    if($prop.Name -eq 'UserIDs') {
+                        foreach($record in $prop.Value) {
+                            [void]$itemResult.subResultUserIDs.Add([PSCustomObject]@{ "UserID" = $row.UserID; "ID" = $record.ID; "Type" = $record.Type; })
+                        }
+                        continue
+                    }
+
+                    if($prop.Name -eq 'UserRoleIDs') {
+                        foreach($record in $prop.Value) {
+                            foreach($subRecord in $record.Identifiers) {
+                                [void]$itemResult.subResultUserRoleIDs.Add([PSCustomObject]@{ "UserID" = $row.UserID; "ID" = $subRecord.ID; "Type" = $subRecord.Type; })
+                            }
+                        }
+                        continue
+                    }
+
+                    if($prop.Name -eq 'LinkedTemplatesConfig') {
+                        foreach($record in $prop.Value) {
+                            foreach($subRecord in $record.DefaultTemplateID) {
+                                [void]$itemResult.subResultLinkedTemplatesConfig.Add([PSCustomObject]@{ "UserID" = $row.UserID; "ID" = $subRecord.ID; "Type" = $subRecord.Type; "Area" = "DefaultTemplateID"})
+                            }
+
+                            foreach($subRecord in $record.AppliedTemplateID) {
+                                [void]$itemResult.subResultLinkedTemplatesConfig.Add([PSCustomObject]@{ "UserID" = $row.UserID; "ID" = $subRecord.ID; "Type" = $subRecord.Type; "Area" = "AppliedTemplateID"})
+                            }
+
+                            foreach($subRecord in $record.AvailableLinkableTemplates) {
+                                foreach($nestedSubRecord in $subRecord.LinkedTemplateID) {
+                                    [void]$itemResult.subResultLinkedTemplatesConfig.Add([PSCustomObject]@{ "UserID" = $row.UserID; "ID" = $nestedSubRecord.ID; "Type" = $nestedSubRecord.Type; "Area" = "AvailableLinkableTemplates"})
+                                }
+                            }
+                        }
+                        continue
+                    }
+
+                    if($prop.Name -eq 'UserSubtemplateIDs') {
+                        foreach($record in $prop.Value) {
+                            foreach($subRecord in $record.Identifiers) {
+                                [void]$itemResult.subResultUserSubtemplateIDs.Add([PSCustomObject]@{ "UserID" = $row.UserID; "ID" = $subRecord.ID; "Type" = $subRecord.Type; })
+                            }
+                        }
+                        continue
+                    }
+
+                    if($prop.Name -eq 'LinkedProviderID') {
+                        foreach($record in $prop.Value) {
+                                [void]$itemResult.subResultLinkedProviderID.Add([PSCustomObject]@{ "UserID" = $row.UserID; "ID" = $record.ID; "Type" = $record.Type; })
+                        }
+                        continue
+                    }
+
+                    if($propertiesHT[$prop.Name].Type -eq 'object') {
+                        foreach($subProperty in $propertiesHT[$prop.Name].objectfields) {
+                            $row.("$($prop.Name)_$($subProperty)") = $prop.Value.$subProperty
+                        }
+                        continue
+                    }
+                    
+                    if ($properties.Contains($prop.Name)) {
+                        $row.($prop.Name) = $prop.Value
+                    }
+                }
+                
+                $itemResult.result = $row
+
+                return $itemResult
+            }).AddArgument($item).AddArgument($system_params).AddArgument($Class).AddArgument($template).AddArgument($index).AddArgument($properties).AddArgument($propertiesHT)
+
+            $runspace.RunspacePool = $runspacePool
+            $runspaces += [PSCustomObject]@{ Pipe = $runspace; Status = $runspace.BeginInvoke(); Index = $index }
+            $index++
+        }
+
+        # Collect results
+        $total = $runspaces.Count
+        $completed = 0
+
+        foreach ($r in $runspaces) {
+            $output = $r.Pipe.EndInvoke($r.Status)
+            $completed++
+
+            if ($completed % 250 -eq 0 -or $completed -eq $total) {
+                $percent = [math]::Round(($completed / $total) * 100, 2)
+                Log info "Progress: [$completed/$total] requests completed ($percent%)"
+            }
+
+            if($null -ne $output.logMessage) {
+                Log verbose $output.logMessage
+            }
+            
+            $output.result
+            [void]$Global:UserInfo.AddRange(@() + $output.result)
+            [void]$Global:UserInfo_UserIDs.Add($output.subResultUserIDs)
+            [void]$Global:UserInfo_UserRoleIDs.Add($output.subResultUserRoleIDs)
+            [void]$Global:UserInfo_LinkedTemplatesConfig.Add($output.subResultLinkedTemplatesConfig)
+            [void]$Global:UserInfo_UserSubtemplateIDs.Add($output.subResultUserSubtemplateIDs)
+            [void]$Global:UserInfo_LinkedProviderID.Add($output.subResultLinkedProviderID)
+
+            $r.Pipe.Dispose()
+        }
+
+        $runspacePool.Close()
+        $runspacePool.Dispose()
+
+        # Final output
+        $Global:UserInfoCacheTime = Get-Date
 }
 
+function Idm-UserInfo_UserIDsRead {
+    param (
+        # Mode
+        [switch] $GetMeta,    
+        # Parameters
+        [string] $SystemParams,
+        [string] $FunctionParams
+
+    )
+        $system_params   = ConvertFrom-Json2 $SystemParams
+        $function_params = ConvertFrom-Json2 $FunctionParams
+        $Class = 'UserInfo_UserID'
+        
+        if ($GetMeta) {
+            Get-ClassMetaData -SystemParams $SystemParams -Class $Class
+            return
+        }
+
+        # Refresh cache if needed
+        if ($Global:UserInfo.Count -eq 0 -or ((Get-Date) - $Global:UserInfoCacheTime).TotalMinutes -gt 5) {
+            Idm-UserInfoRead -SystemParams $SystemParams -FunctionParams $FunctionParams | Out-Null
+        }
+
+        $Global:UserInfo_UserIDs
+}
+
+function Idm-UserInfo_UserRoleIDsRead {
+    param (
+        # Mode
+        [switch] $GetMeta,    
+        # Parameters
+        [string] $SystemParams,
+        [string] $FunctionParams
+
+    )
+        $system_params   = ConvertFrom-Json2 $SystemParams
+        $function_params = ConvertFrom-Json2 $FunctionParams
+        $Class = 'UserInfo_UserID'
+        
+        if ($GetMeta) {
+            Get-ClassMetaData -SystemParams $SystemParams -Class $Class
+            return
+        }
+
+        # Refresh cache if needed
+        if ($Global:UserInfo.Count -eq 0 -or ((Get-Date) - $Global:UserInfoCacheTime).TotalMinutes -gt 5) {
+            Idm-UserInfoRead -SystemParams $SystemParams -FunctionParams $FunctionParams | Out-Null
+        }
+
+        $Global:UserInfo_UserRoleIDs
+}
+
+function Idm-UserInfo_LinkedTemplatesConfigRead {
+    param (
+        # Mode
+        [switch] $GetMeta,    
+        # Parameters
+        [string] $SystemParams,
+        [string] $FunctionParams
+
+    )
+        $system_params   = ConvertFrom-Json2 $SystemParams
+        $function_params = ConvertFrom-Json2 $FunctionParams
+        $Class = 'UserInfo_LinkedTemplatesConfig'
+        
+        if ($GetMeta) {
+            Get-ClassMetaData -SystemParams $SystemParams -Class $Class
+            return
+        }
+
+        # Refresh cache if needed
+        if ($Global:UserInfo.Count -eq 0 -or ((Get-Date) - $Global:UserInfoCacheTime).TotalMinutes -gt 5) {
+            Idm-UserInfoRead -SystemParams $SystemParams -FunctionParams $FunctionParams | Out-Null
+        }
+
+        $Global:UserInfo_LinkedTemplatesConfig
+}
+
+function Idm-UserInfo_UserSubtemplateIDsRead {
+    param (
+        # Mode
+        [switch] $GetMeta,    
+        # Parameters
+        [string] $SystemParams,
+        [string] $FunctionParams
+
+    )
+        $system_params   = ConvertFrom-Json2 $SystemParams
+        $function_params = ConvertFrom-Json2 $FunctionParams
+        $Class = 'UserInfo_UserSubtemplateIDs'
+        
+        if ($GetMeta) {
+            Get-ClassMetaData -SystemParams $SystemParams -Class $Class
+            return
+        }
+
+        # Refresh cache if needed
+        if ($Global:UserInfo.Count -eq 0 -or ((Get-Date) - $Global:UserInfoCacheTime).TotalMinutes -gt 5) {
+            Idm-UserInfoRead -SystemParams $SystemParams -FunctionParams $FunctionParams | Out-Null
+        }
+
+        $Global:UserInfo_UserSubtemplateIDs
+}
+
+function Idm-UserInfo_LinkedProviderIDRead {
+    param (
+        # Mode
+        [switch] $GetMeta,    
+        # Parameters
+        [string] $SystemParams,
+        [string] $FunctionParams
+
+    )
+        $system_params   = ConvertFrom-Json2 $SystemParams
+        $function_params = ConvertFrom-Json2 $FunctionParams
+        $Class = 'UserInfo_LinkedProviderID'
+        
+        if ($GetMeta) {
+            Get-ClassMetaData -SystemParams $SystemParams -Class $Class
+            return
+        }
+
+        # Refresh cache if needed
+        if ($Global:UserInfo.Count -eq 0 -or ((Get-Date) - $Global:UserInfoCacheTime).TotalMinutes -gt 5) {
+            Idm-UserInfoRead -SystemParams $SystemParams -FunctionParams $FunctionParams | Out-Null
+        }
+
+        $Global:UserInfo_LinkedProviderID
+}
 #
 #   Internal Functions
 #
@@ -489,10 +954,12 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
 function Execute-Request {
     param (
         [hashtable] $SystemParams,
+        [string] $Method = "GET",
         [string] $Uri,
         [string] $Body,
         [string] $Class,
-        [string] $LogMessage
+        [string] $LogMessage,
+        [boolean] $LoggingEnabled = $true
     )
     # Setup  authorization token
     $pair = "emp`$$($SystemParams.username):$($SystemParams.password)"
@@ -504,11 +971,14 @@ function Execute-Request {
             Authorization = "Basic $($encodedCreds)"
             'Epic-Client-ID' = $SystemParams.clientId
             Accept = "application/json"
-            'Content-Type' = "application/json"
         }
-        Method = "POST"
+        Method = $Method
         Uri = ("https://{0}{1}" -f $SystemParams.hostname, $uri)
-        Body = $Body
+    }
+
+    if(@('PATCH','PUT','POST') -contains $method ) { 
+        $splat.Body = $Body 
+        $splat.Headers.'Content-Type' = "application/json"
     }
 
     # Configure proxy if enabled
@@ -547,7 +1017,7 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
             $attemptSuffix = if ($attempt -gt 0) { " (Attempt $($attempt + 1))" } else { "" }
             
             $baseMessage = "$($splat.Method) Call: $($splat.Uri)$($attemptSuffix) [$($Class)] $($LogMessage)"
-            Log verbose $baseMessage
+            if($LoggingEnabled) { Log verbose $baseMessage }
 
             $response = Invoke-RestMethod @splat -ErrorAction Stop
             break
@@ -558,7 +1028,7 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
             $statusCode = $_.Exception.Response.StatusCode.value__
             if ($statusCode -eq 429 -and $attempt -lt $SystemParams.nr_of_retries) {
                 $attempt++
-                Log warning "Received $statusCode. Retrying in $retryDelay seconds..."
+                if($LoggingEnabled) { Log warning "Received $statusCode. Retrying in $retryDelay seconds..." }
                 Start-Sleep -Seconds $retryDelay
                 $retryDelay *= 2 # Exponential backoff
             }
