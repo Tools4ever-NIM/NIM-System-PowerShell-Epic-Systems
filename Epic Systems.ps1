@@ -15,6 +15,8 @@ $Global:UserInfo_LinkedTemplatesConfig = [System.Collections.ArrayList]@()
 $Global:UserInfo_UserSubtemplateIDs = [System.Collections.ArrayList]@()
 $Global:UserInfo_LinkedProviderID = [System.Collections.ArrayList]@()
 
+$Global:CancellationSource = [System.Threading.CancellationTokenSource]::new()
+
 $Properties = @{
     User = @(
         @{ name = 'ID';              type = 'string';   objectfields = $null;             options = @('default','key') },
@@ -28,48 +30,40 @@ $Properties = @{
         @{ name = 'Group';              type = 'string';   objectfields = $null;             options = @('default') }
     )
     UserInfo = @(
-        @{ name = 'UserID';            type = 'string';   objectfields = $null;             options = @('default','key') },
-        @{ name = 'Name';            type = 'string';   objectfields = $null;             options = @('default') },
-        @{ name = 'ContactComment';            type = 'string';   objectfields = $null;             options = @('default') },
-        @{ name = 'LDAPOverrideID';            type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'UserID';            type = 'string';   objectfields = $null;             options = @('default','key','create_m') },
+        @{ name = 'Name';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
+        @{ name = 'ContactComment';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
+        @{ name = 'LDAPOverrideID';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
         @{ name = 'IsPasswordChangeRequired';            type = 'string';   objectfields = $null;             options = @('default') },
-        @{ name = 'IsActive';            type = 'string';   objectfields = $null;             options = @('default') },
-        @{ name = 'StartDate';            type = 'string';   objectfields = $null;             options = @('default') },
-        @{ name = 'EndDate';            type = 'string';   objectfields = $null;             options = @('default') },
-        @{ name = 'UserAlias';            type = 'string';   objectfields = $null;             options = @('default') },
-        @{ name = 'UserPhotoPath';            type = 'string';   objectfields = $null;             options = @('default') },
-        @{ name = 'Sex';            type = 'string';   objectfields = $null;             options = @('default') },
-        @{ name = 'ReportGrouper1';            type = 'string';   objectfields = $null;             options = @('default') },
-        @{ name = 'ReportGrouper2';            type = 'string';   objectfields = $null;             options = @('default') },
-        @{ name = 'ReportGrouper3';            type = 'string';   objectfields = $null;             options = @('default') },
-        @{ name = 'CategoryReportGrouper1';            type = 'string';   objectfields = $null;             options = @('default') },
-        @{ name = 'CategoryReportGrouper2';            type = 'string';   objectfields = $null;             options = @('default') },
-        @{ name = 'CategoryReportGrouper3';            type = 'string';   objectfields = $null;             options = @('default') },
-        @{ name = 'CategoryReportGrouper4';            type = 'string';   objectfields = $null;             options = @('default') },
-        @{ name = 'CategoryReportGrouper5';            type = 'string';   objectfields = $null;             options = @('default') },
-        @{ name = 'CategoryReportGrouper6';            type = 'string';   objectfields = $null;             options = @('default') },
-        @{ name = 'Notes';            type = 'string';   objectfields = $null;             options = @('default') },
-        @{ name = 'InBasketClassifications';            type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'IsActive';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
+        @{ name = 'StartDate';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
+        @{ name = 'EndDate';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
+        @{ name = 'UserAlias';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
+        @{ name = 'UserPhotoPath';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
+        @{ name = 'Sex';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
+        @{ name = 'ReportGrouper1';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
+        @{ name = 'ReportGrouper2';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
+        @{ name = 'ReportGrouper3';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
+        @{ name = 'CategoryReportGrouper1';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
+        @{ name = 'CategoryReportGrouper2';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
+        @{ name = 'CategoryReportGrouper3';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
+        @{ name = 'CategoryReportGrouper4';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
+        @{ name = 'CategoryReportGrouper5';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
+        @{ name = 'CategoryReportGrouper6';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
+        @{ name = 'Notes';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
+        @{ name = 'InBasketClassifications';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
         @{ name = 'UserDirectoryPath';            type = 'string';   objectfields = $null;             options = @('default') },
-        @{ name = 'ProviderAtLoginOption';            type = 'string';   objectfields = $null;             options = @('default') },
-        @{ name = 'UserComplexName';            type = 'object';   objectfields = @('FirstName','GivenNameInitials','MiddleName','LastName','LastNamePrefix','SpouseLastName','SpousePrefix','Suffix','AcademicTitle','PrimaryTitle','SpouseLastNameFirst','FatherName','GrandfatherName');             options = @('default') },
-        @{ name = 'AuthenticationConfigurationID';            type = 'string';   objectfields = $null;             options = @('default') },
-        @{ name = 'BlockStatus';            type = 'object';   objectfields = @('IsBlocked','Reason','Comment');             options = @('default') },
+        @{ name = 'ProviderAtLoginOption';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
+        @{ name = 'UserComplexName';            type = 'object';   objectfields = @('FirstName','GivenNameInitials','MiddleName','LastName','LastNamePrefix','SpouseLastName','SpousePrefix','Suffix','AcademicTitle','PrimaryTitle','SpouseLastNameFirst','FatherName','GrandfatherName');             options = @('default','create_o') },
+        @{ name = 'AuthenticationConfigurationID';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
+        @{ name = 'BlockStatus';            type = 'object';   objectfields = @('IsBlocked','Reason','Comment');             options = @('default','create_o') },
         @{ name = 'EmployeeDemographics';            type = 'string';   objectfields = $null;             options = @('default') },
         @{ name = 'PrimaryManager';            type = 'string';   objectfields = $null;             options = @('default') },
         @{ name = 'UsersManagers';            type = 'string';   objectfields = $null;             options = @('default') },
-        @{ name = 'DefaultLoginDepartmentID';            type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'DefaultLoginDepartmentID';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
         @{ name = 'CustomUserDictionaries';            type = 'string';   objectfields = $null;             options = @('default') },
         @{ name = 'ExternalIdentifiers';            type = 'string';   objectfields = $null;             options = @('default') }
-
-        #Object arrays
-        #@{ name = 'UserIDs';            type = 'string';   objectfields = $null;             options = @('default') },
-        #@{ name = 'LinkedTemplatesConfig';            type = 'string';   objectfields = $null;             options = @('default') },
-        #@{ name = 'AppliedTemplateID';            type = 'string';   objectfields = $null;             options = @('default') },
-        #@{ name = 'AvailableLinkableTemplates';            type = 'string';   objectfields = $null;             options = @('default') },
-        #@{ name = 'UserSubtemplateIDs';            type = 'string';   objectfields = $null;             options = @('default') },
-        #@{ name = 'UserRoleIDs';            type = 'string';   objectfields = $null;             options = @('default') },
-        #@{ name = 'LinkedProviderID';            type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'UserInternalID';            type = 'string';   objectfields = $null;             options = @('create_r') }
     )
     UserInfo_UserID = @(
         @{ name = 'UserID';              type = 'string';   objectfields = $null;             options = @('default') },
@@ -356,10 +350,7 @@ function Idm-UsersRead {
 
                 # Continue if any values are non-empty
                 $hasMore = ($searchStateContext.Identifier -or $searchStateContext.ResumeInfo -or $searchStateContext.CriteriaHash)
-#break
             } while ($hasMore)
-
-            $Global:UsersCacheTime = Get-Date
         }
         
         $Global:User
@@ -398,6 +389,10 @@ function Idm-UserGroupsRead {
         }
         
         # Prepare runspace pool
+        $cancellationSource = [System.Threading.CancellationTokenSource]::new()
+        $cancellationToken = $cancellationSource.Token
+        $system_params.CancellationSource = $cancellationSource
+
         $runspacePool = [runspacefactory]::CreateRunspacePool(1, [int]$system_params.nr_of_threads)
         $runspacePool.Open()
         $runspaces = @()
@@ -408,6 +403,11 @@ function Idm-UserGroupsRead {
         $funcDef = "function Execute-Request { $((Get-Command Execute-Request -CommandType Function).ScriptBlock.ToString()) }"
 
         foreach ($item in $Global:User) {
+            if ($Global:CancellationSource.IsCancellationRequested) {
+                Log warning "Execution canceled due to 503 error. Skipping remaining runspaces."
+                break
+            }
+
             $runspace = [powershell]::Create().AddScript($funcDef).AddScript({
                 param($item, $system_params, $Class, $template, $index)
                 
@@ -476,10 +476,9 @@ function Idm-UserGroupsRead {
 
         # Final output
         $result
-
 }
 
-function Idm-UserInfoRead {
+function Idm-UserInfosRead {
     param (
         # Mode
         [switch] $GetMeta,    
@@ -500,6 +499,11 @@ function Idm-UserInfoRead {
         # Refresh cache if needed
         if ($Global:Users.Count -eq 0) {
             Idm-UsersRead -SystemParams $SystemParams -FunctionParams $FunctionParams | Out-Null
+        }
+
+        if ($Global:UserInfo.Count -gt 0) {
+            $Global:UserInfo
+            break
         }
 
         $Global:UserInfo.Clear()
@@ -668,9 +672,68 @@ function Idm-UserInfoRead {
 
         $runspacePool.Close()
         $runspacePool.Dispose()
+}
 
-        # Final output
-        $Global:UserInfoCacheTime = Get-Date
+function Idm-UserInfoCreate {
+    param (
+        # Operations
+        [switch] $GetMeta,
+        # Parameters
+        [string] $SystemParams,
+        [string] $FunctionParams
+    )
+
+    Log verbose "-GetMeta=$GetMeta -SystemParams='$SystemParams' -FunctionParams='$FunctionParams'"
+    $Class = 'UserInfo'
+
+    if ($GetMeta) {
+        #
+        # Get meta data
+        #
+        @{
+            semantics = 'create'
+            parameters = @(
+                ($Global:Properties.$Class | Where-Object { $_.options.Contains('create_m') }) | ForEach-Object {
+                    @{ name = $_.name;  allowance = 'mandatory' }
+                }
+
+                ($Global:Properties.$Class | Where-Object { $_.options.Contains('create_o') -or $_.options.Contains('optional') }) | ForEach-Object {
+                    if($_.Type -eq 'object') {
+                        foreach($field in $_.objectfields) {
+                            @{ name = $field;  allowance = 'optional' }   
+                        }
+                        continue
+                    }
+                    @{ name = $_.name;  allowance = 'optional' }
+                }
+
+                #$Global:Properties.$Class | Where-Object { !$_.options.Contains('create_m') -and !$_.options.Contains('create_o') -and !$_.options.Contains('optional') } | ForEach-Object {
+                $Global:Properties.$Class | Where-Object { !$_.options.Contains('create_m') } | ForEach-Object {
+                    if($_.Type -eq 'object') {
+                        foreach($field in $_.objectfields) {
+                            @{ name = $field;  allowance = 'prohibited' }   
+                        }
+                        continue
+                    }
+                    @{ name = $_.name; allowance = 'prohibited' }
+                }
+            )
+        }
+    }
+    else {
+        #
+        # Execute function
+        #
+        $system_params   = ConvertFrom-Json2 $SystemParams
+        $function_params = ConvertFrom-Json2 $FunctionParams
+
+        #TBD
+        
+        LogIO info "UserCreate" -out $result
+        $result
+    }
+
+    Log verbose "Done"
 }
 
 function Idm-UserInfo_UserIDsRead {
@@ -693,7 +756,7 @@ function Idm-UserInfo_UserIDsRead {
 
         # Refresh cache if needed
         if ($Global:UserInfo.Count -eq 0) {
-            Idm-UserInfoRead -SystemParams $SystemParams -FunctionParams $FunctionParams | Out-Null
+            Idm-UserInfosRead -SystemParams $SystemParams -FunctionParams $FunctionParams | Out-Null
         }
 
         $Global:UserInfo_UserIDs
@@ -719,13 +782,13 @@ function Idm-UserInfo_UserRoleIDsRead {
 
         # Refresh cache if needed
         if ($Global:UserInfo.Count -eq 0) {
-            Idm-UserInfoRead -SystemParams $SystemParams -FunctionParams $FunctionParams | Out-Null
+            Idm-UserInfosRead -SystemParams $SystemParams -FunctionParams $FunctionParams | Out-Null
         }
 
         $Global:UserInfo_UserRoleIDs
 }
 
-function Idm-UserInfo_LinkedTemplatesConfigRead {
+function Idm-UserInfo_LinkedTemplatesConfigsRead {
     param (
         # Mode
         [switch] $GetMeta,    
@@ -745,7 +808,7 @@ function Idm-UserInfo_LinkedTemplatesConfigRead {
 
         # Refresh cache if needed
         if ($Global:UserInfo.Count -eq 0) {
-            Idm-UserInfoRead -SystemParams $SystemParams -FunctionParams $FunctionParams | Out-Null
+            Idm-UserInfosRead -SystemParams $SystemParams -FunctionParams $FunctionParams | Out-Null
         }
 
         $Global:UserInfo_LinkedTemplatesConfig
@@ -771,13 +834,13 @@ function Idm-UserInfo_UserSubtemplateIDsRead {
 
         # Refresh cache if needed
         if ($Global:UserInfo.Count -eq 0) {
-            Idm-UserInfoRead -SystemParams $SystemParams -FunctionParams $FunctionParams | Out-Null
+            Idm-UserInfosRead -SystemParams $SystemParams -FunctionParams $FunctionParams | Out-Null
         }
 
         $Global:UserInfo_UserSubtemplateIDs
 }
 
-function Idm-UserInfo_LinkedProviderIDRead {
+function Idm-UserInfo_LinkedProviderIDsRead {
     param (
         # Mode
         [switch] $GetMeta,    
@@ -797,7 +860,7 @@ function Idm-UserInfo_LinkedProviderIDRead {
 
         # Refresh cache if needed
         if ($Global:UserInfo.Count -eq 0) {
-            Idm-UserInfoRead -SystemParams $SystemParams -FunctionParams $FunctionParams | Out-Null
+            Idm-UserInfosRead -SystemParams $SystemParams -FunctionParams $FunctionParams | Out-Null
         }
 
         $Global:UserInfo_LinkedProviderID
@@ -1014,11 +1077,15 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
             $response = Invoke-RestMethod @splat -ErrorAction Stop
             break
         }
-        catch {
-            if($errorBreak) { throw}
-            
+        catch {           
             $statusCode = $_.Exception.Response.StatusCode.value__
-            if ($statusCode -eq 429 -and $attempt -lt $SystemParams.nr_of_retries) {
+            if ($statusCode -eq 503) {
+                if ($null -ne $Global:CancellationSource) {
+                    $Global:CancellationSource.Cancel()
+                }
+                throw "503 Service Unavailable - Cancelling all requests. - $($_)"
+            }
+            elseif ($statusCode -eq 429 -and $attempt -lt $SystemParams.nr_of_retries) {
                 $attempt++
                 if($LoggingEnabled) { Log warning "Received $statusCode. Retrying in $retryDelay seconds..." }
                 Start-Sleep -Seconds $retryDelay
