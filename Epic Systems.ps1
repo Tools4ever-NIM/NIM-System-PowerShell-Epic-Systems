@@ -31,6 +31,7 @@ $Properties = @{
     )
     UserInfo = @(
         @{ name = 'UserID';            type = 'string';   objectfields = $null;             options = @('default','key','create_m') },
+        @{ name = 'UserType';            type = 'string';   objectfields = $null;             options = @('update_m','forcepwd_o') },
         @{ name = 'Name';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
         @{ name = 'ContactComment';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
         @{ name = 'LDAPOverrideID';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
@@ -62,7 +63,7 @@ $Properties = @{
         @{ name = 'UsersManagers';            type = 'string';   objectfields = $null;             options = @('default') },
         @{ name = 'DefaultLoginDepartmentID';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
         @{ name = 'CustomUserDictionaries';            type = 'string';   objectfields = $null;             options = @('default') },
-        @{ name = 'ExternalIdentifiers';            type = 'string';   objectfields = $null;             options = @('default') }
+        @{ name = 'ExternalIdentifiers';            type = 'string';   objectfields = $null;             options = @('default') },
         @{ name = 'UserInternalID';            type = 'string';   objectfields = $null;             options = @('create_r') }
     )
     UserInfo_UserID = @(
@@ -350,6 +351,8 @@ function Idm-UsersRead {
 
                 # Continue if any values are non-empty
                 $hasMore = ($searchStateContext.Identifier -or $searchStateContext.ResumeInfo -or $searchStateContext.CriteriaHash)
+#break
+if($i -ge 50) { break }
             } while ($hasMore)
         }
         
@@ -693,30 +696,35 @@ function Idm-UserInfoCreate {
         @{
             semantics = 'create'
             parameters = @(
-                ($Global:Properties.$Class | Where-Object { $_.options.Contains('create_m') }) | ForEach-Object {
-                    @{ name = $_.name;  allowance = 'mandatory' }
-                }
-
-                ($Global:Properties.$Class | Where-Object { $_.options.Contains('create_o') -or $_.options.Contains('optional') }) | ForEach-Object {
-                    if($_.Type -eq 'object') {
-                        foreach($field in $_.objectfields) {
-                            @{ name = $field;  allowance = 'optional' }   
-                        }
-                        continue
+                $Global:Properties.$Class |
+                    Where-Object { $_.options -contains 'create_m' } |
+                    ForEach-Object {
+                        @{ name = $_.name; allowance = 'mandatory' }
                     }
-                    @{ name = $_.name;  allowance = 'optional' }
-                }
 
-                #$Global:Properties.$Class | Where-Object { !$_.options.Contains('create_m') -and !$_.options.Contains('create_o') -and !$_.options.Contains('optional') } | ForEach-Object {
-                $Global:Properties.$Class | Where-Object { !$_.options.Contains('create_m') } | ForEach-Object {
-                    if($_.Type -eq 'object') {
-                        foreach($field in $_.objectfields) {
-                            @{ name = $field;  allowance = 'prohibited' }   
+                $Global:Properties.$Class |
+                    Where-Object { $_.options -contains 'create_o' -or $_.options -contains 'optional' } |
+                    ForEach-Object {
+                        if ($_.Type -eq 'object') {
+                            foreach ($field in $_.objectfields) {
+                                @{ name = "$($_.name)_$field"; allowance = 'optional' }
+                            }
+                        } else {
+                            @{ name = $_.name; allowance = 'optional' }
                         }
-                        continue
                     }
-                    @{ name = $_.name; allowance = 'prohibited' }
-                }
+
+                $Global:Properties.$Class |
+                    Where-Object { -not ( $_.options -contains 'create_m' -or $_.options -contains 'create_o' -or $_.options -contains 'optional' ) } |
+                    ForEach-Object {
+                        if ($_.Type -eq 'object') {
+                            foreach ($field in $_.objectfields) {
+                                @{ name = "$($_.name)_$field"; allowance = 'prohibited' }
+                            }
+                        } else {
+                            @{ name = $_.name; allowance = 'prohibited' }
+                        }
+                    }
             )
         }
     }
@@ -728,8 +736,154 @@ function Idm-UserInfoCreate {
         $function_params = ConvertFrom-Json2 $FunctionParams
 
         #TBD
-        
+
         LogIO info "UserCreate" -out $result
+        $result
+    }
+
+    Log verbose "Done"
+}
+
+function Idm-UserInfoUpdate {
+    param (
+        # Operations
+        [switch] $GetMeta,
+        # Parameters
+        [string] $SystemParams,
+        [string] $FunctionParams
+    )
+
+    Log verbose "-GetMeta=$GetMeta -SystemParams='$SystemParams' -FunctionParams='$FunctionParams'"
+    $Class = 'UserInfo'
+
+    if ($GetMeta) {
+        #
+        # Get meta data
+        #
+        @{
+            semantics = 'update'
+            parameters = @(
+                $Global:Properties.$Class |
+                    Where-Object { $_.options -contains 'forcepwd_m' -or $_.options -contains 'key' } |
+                    ForEach-Object { @{ name = $_.name; allowance = 'mandatory' } }
+
+                $Global:Properties.$Class |
+                    Where-Object { $_.options -contains 'forcepwd_o' } |
+                    ForEach-Object {
+                        if($_.Type -eq 'object') {
+                            foreach($field in $_.objectfields) {
+                                @{ name = "$($_.name)_$($field)"; allowance = 'optional' }
+                            }
+                        } else {
+                            @{ name = $_.name; allowance = 'optional' }
+                        }
+                    }
+
+                $Global:Properties.$Class |
+                    Where-Object { -not ($_.options -contains 'forcepwd_m' -or $_.options -contains 'forcepwd_o' -or $_.options -contains 'key') } |
+                    ForEach-Object {
+                        if($_.Type -eq 'object') {
+                            foreach($field in $_.objectfields) {
+                                @{ name = "$($_.name)_$($field)"; allowance = 'prohibited' }
+                            }
+                        } else {
+                            @{ name = $_.name; allowance = 'prohibited' }
+                        }
+                    }
+            )
+        }
+
+    }
+    else {
+        #
+        # Execute function
+        #
+        $system_params   = ConvertFrom-Json2 $SystemParams
+        $function_params = ConvertFrom-Json2 $FunctionParams
+
+        $uri = "/interconnect-amcurprd-username/api/epic/2012/Security/PersonnelManagement/ForcePasswordChange/Personnel/User/ForcePasswordChange?UserID=$($function_params.UserID)"
+        
+        if($function_params.UserType.length -gt 0) {
+            $uri += &UserType=$($function_params.UserType)
+        }
+        
+        $splat = @{
+            SystemParams = $system_params
+            Method = "POST"
+            Uri = $uri
+                    Body = $null
+                    Class = $Class
+                    LogMessage = "[UserID: $($function_params.UserID) UserType: $($function_params.UserType)]"
+                    LoggingEnabled = $false
+        }
+        Execute-Request @splat
+
+        LogIO info "User-ForcePasswordChange" -out $result
+        $result
+    }
+
+    Log verbose "Done"
+}
+
+function Idm-UserInfoDelete {
+    param (
+        # Operations
+        [switch] $GetMeta,
+        # Parameters
+        [string] $SystemParams,
+        [string] $FunctionParams
+    )
+
+    Log verbose "-GetMeta=$GetMeta -SystemParams='$SystemParams' -FunctionParams='$FunctionParams'"
+    $Class = 'UserInfo'
+
+    if ($GetMeta) {
+        #
+        # Get meta data
+        #
+        @{
+            semantics  = 'delete'
+            parameters = @(
+                $Global:Properties.$Class |
+                    Where-Object { $_.options -contains 'key' } |
+                    ForEach-Object { @{ name = $_.name; allowance = 'mandatory' } }
+
+                $Global:Properties.$Class |
+                    Where-Object { -not ($_.options -contains 'key') } |
+                    ForEach-Object {
+                        if($_.Type -eq 'object') {
+                            foreach($field in $_.objectfields) {
+                                @{ name = "$($_.name)_$($field)"; allowance = 'prohibited' }
+                            }
+                        } else {
+                            @{ name = $_.name; allowance = 'prohibited' }
+                        }
+                     }
+            )
+        }
+
+    }
+    else {
+        #
+        # Execute function
+        #
+        $system_params   = ConvertFrom-Json2 $SystemParams
+        $function_params = ConvertFrom-Json2 $FunctionParams
+
+        $uri = "/interconnect-amcurprd-username/api/epic/2012/Security/PersonnelManagement/DeleteUser/Personnel/User/Delete?UserID=$($function_params.UserID)"
+        
+        $splat = @{
+            SystemParams = $system_params
+            Method = "POST"
+            Uri = $uri
+            Body = $null
+            Class = $Class
+            LogMessage = "[UserID: $($function_params.UserID)"
+            LoggingEnabled = $false
+        }
+        Execute-Request @splat
+
+        LogIO info "User-Delete" -out $result
         $result
     }
 
@@ -953,8 +1107,9 @@ function Execute-SOAPRequest {
     # Configure proxy if enabled
     if ($SystemParams.use_proxy) {
         # Avoid redefining TrustAllCertsPolicy class unnecessarily
-        #if (-not ([System.Net.ServicePointManager]::CertificatePolicy -is [TrustAllCertsPolicy])) {
-            Add-Type -TypeDefinition @"
+        if (-not ([System.Net.ServicePointManager]::CertificatePolicy -and
+          [System.Net.ServicePointManager]::CertificatePolicy.GetType().Name -eq 'TrustAllCertsPolicy')) {
+    Add-Type -TypeDefinition @"
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 public class TrustAllCertsPolicy : ICertificatePolicy {
@@ -965,8 +1120,10 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
     }
 }
 "@ -ErrorAction Stop
-           # [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-       # }
+
+    [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+}
+
 
         $splat["Proxy"] = $SystemParams.proxy_address
 
@@ -1031,16 +1188,19 @@ function Execute-Request {
         Uri = ("https://{0}{1}" -f $SystemParams.hostname, $uri)
     }
 
+    <#
     if(@('PATCH','PUT','POST') -contains $method ) { 
         $splat.Body = $Body 
         $splat.Headers.'Content-Type' = "application/json"
     }
+    #>
 
     # Configure proxy if enabled
     if ($SystemParams.use_proxy) {
         # Avoid redefining TrustAllCertsPolicy class unnecessarily
-        if (-not ([System.Net.ServicePointManager]::CertificatePolicy -is [TrustAllCertsPolicy])) {
-            Add-Type -TypeDefinition @"
+        if (-not ([System.Net.ServicePointManager]::CertificatePolicy -and
+          [System.Net.ServicePointManager]::CertificatePolicy.GetType().Name -eq 'TrustAllCertsPolicy')) {
+    Add-Type -TypeDefinition @"
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 public class TrustAllCertsPolicy : ICertificatePolicy {
@@ -1051,8 +1211,10 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
     }
 }
 "@ -ErrorAction Stop
-            [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-        }
+
+    [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+}
+
 
         $splat["Proxy"] = $SystemParams.proxy_address
 
