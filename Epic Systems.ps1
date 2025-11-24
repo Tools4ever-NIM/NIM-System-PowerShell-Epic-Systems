@@ -31,7 +31,7 @@ $Properties = @{
     )
     UserInfo = @(
         @{ name = 'UserID';            type = 'string';   objectfields = $null;             options = @('default','key','create_m') },
-        @{ name = 'UserType';            type = 'string';   objectfields = $null;             options = @('update_m','forcepwd_o') },
+        @{ name = 'UserType';            type = 'string';   objectfields = $null;             options = @('update_m','forcepwd_o','activate_o','inactivate_o','setpwd_o') },
         @{ name = 'Name';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
         @{ name = 'ContactComment';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
         @{ name = 'LDAPOverrideID';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
@@ -64,7 +64,8 @@ $Properties = @{
         @{ name = 'DefaultLoginDepartmentID';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
         @{ name = 'CustomUserDictionaries';            type = 'string';   objectfields = $null;             options = @('default') },
         @{ name = 'ExternalIdentifiers';            type = 'string';   objectfields = $null;             options = @('default') },
-        @{ name = 'UserInternalID';            type = 'string';   objectfields = $null;             options = @('create_r') }
+        @{ name = 'UserInternalID';            type = 'string';   objectfields = $null;             options = @('create_m') }
+        @{ name = 'NewPassword';            type = 'string';   objectfields = $null;             options = @('setpassword_m') }
     )
     UserInfo_UserID = @(
         @{ name = 'UserID';              type = 'string';   objectfields = $null;             options = @('default') },
@@ -92,6 +93,10 @@ $Properties = @{
         @{ name = 'UserID';              type = 'string';   objectfields = $null;             options = @('default') },
         @{ name = 'ID';              type = 'string';   objectfields = $null;             options = @('default') }
         @{ name = 'Type';              type = 'string';   objectfields = $null;             options = @('default') }
+    )
+    UserPager = @(
+        @{ name = 'UserID';              type = 'string';   objectfields = $null;             options = @('key') },
+        @{ name = 'PagerID';              type = 'string';   objectfields = $null;             options = @('default','update_m') }
     )
 }
 
@@ -515,7 +520,7 @@ function Idm-UserInfosRead {
         # Precompute property template
         $properties = $Global:Properties.$Class | Where-Object { ('hidden' -notin $_.options ) }
         $propertiesHT = @{}; $Global:Properties.$Class | ForEach-Object { $propertiesHT[$_.name] = $_ }
-
+        
         $template = [ordered]@{}
         foreach ($prop in $properties.Name) {
             if($propertiesHT[$prop].Type -eq 'object') {
@@ -572,6 +577,8 @@ function Idm-UserInfosRead {
                 $row.UserID = $item.ID
 
                 foreach ($prop in $response.PSObject.Properties) {     
+
+                    if($prop.Name -eq 'IsActive') { 'isActive' | Out-File 'C:\temp2\epicread.txt' -Append}
                     if($prop.Name -eq 'UserIDs') {
                         foreach($record in $prop.Value) {
                             [void]$itemResult.subResultUserIDs.Add([PSCustomObject]@{ "UserID" = $row.UserID; "ID" = $record.ID; "Type" = $record.Type; })
@@ -629,7 +636,7 @@ function Idm-UserInfosRead {
                         }
                         continue
                     }
-                    
+
                     if ($properties.Contains($prop.Name)) {
                         $row.($prop.Name) = $prop.Value
                     }
@@ -638,7 +645,7 @@ function Idm-UserInfosRead {
                 $itemResult.result = $row
 
                 return $itemResult
-            }).AddArgument($item).AddArgument($system_params).AddArgument($Class).AddArgument($template).AddArgument($index).AddArgument($properties).AddArgument($propertiesHT)
+            }).AddArgument($item).AddArgument($system_params).AddArgument($Class).AddArgument($template).AddArgument($index).AddArgument($properties.Name).AddArgument($propertiesHT)
 
             $runspace.RunspacePool = $runspacePool
             $runspaces += [PSCustomObject]@{ Pipe = $runspace; Status = $runspace.BeginInvoke(); Index = $index }
@@ -764,6 +771,346 @@ function Idm-UserInfoUpdate {
             semantics = 'update'
             parameters = @(
                 $Global:Properties.$Class |
+                    Where-Object { $_.options -contains 'update_m' -or $_.options -contains 'key' } |
+                    ForEach-Object { @{ name = $_.name; allowance = 'mandatory' } }
+
+                $Global:Properties.$Class |
+                    Where-Object { $_.options -contains 'update_o' } |
+                    ForEach-Object {
+                        if($_.Type -eq 'object') {
+                            foreach($field in $_.objectfields) {
+                                @{ name = "$($_.name)_$($field)"; allowance = 'optional' }
+                            }
+                        } else {
+                            @{ name = $_.name; allowance = 'optional' }
+                        }
+                    }
+
+                $Global:Properties.$Class |
+                    Where-Object { -not ($_.options -contains 'update_m' -or $_.options -contains 'update_o' -or $_.options -contains 'key') } |
+                    ForEach-Object {
+                        if($_.Type -eq 'object') {
+                            foreach($field in $_.objectfields) {
+                                @{ name = "$($_.name)_$($field)"; allowance = 'prohibited' }
+                            }
+                        } else {
+                            @{ name = $_.name; allowance = 'prohibited' }
+                        }
+                    }
+            )
+        }
+
+    }
+    else {
+        #
+        # Execute function
+        #
+        $system_params   = ConvertFrom-Json2 $SystemParams
+        $function_params = ConvertFrom-Json2 $FunctionParams
+
+        $uri = "/interconnect-amcurprd-username/api/epic/2012/Security/PersonnelManagement/ForcePasswordChange/Personnel/User/Update?UserID=$($function_params.UserID)"
+        
+
+        foreach($property in $function_params) {
+            #Loop over each property specified, add to query parameters
+        }
+        
+        
+        $splat = @{
+            SystemParams = $system_params
+            Method = "POST"
+            Uri = $uri
+                    Body = $null
+                    Class = $Class
+                    LogMessage = "[UserID: $($function_params.UserID) UserType: $($function_params.UserType)]"
+                    LoggingEnabled = $false
+        }
+        Execute-Request @splat
+
+        LogIO info "User-Update" -out $result
+        $result
+    }
+
+    Log verbose "Done"
+}
+
+function Idm-UserInfoSetpassword {
+    param (
+        # Operations
+        [switch] $GetMeta,
+        # Parameters
+        [string] $SystemParams,
+        [string] $FunctionParams
+    )
+
+    Log verbose "-GetMeta=$GetMeta -SystemParams='$SystemParams' -FunctionParams='$FunctionParams'"
+    $Class = 'UserInfo'
+
+    if ($GetMeta) {
+        #
+        # Get meta data
+        #
+        @{
+            semantics = 'update'
+            parameters = @(
+                $Global:Properties.$Class |
+                    Where-Object { $_.options -contains 'setpwd_m' -or $_.options -contains 'key' } |
+                    ForEach-Object { @{ name = $_.name; allowance = 'mandatory' } }
+
+                $Global:Properties.$Class |
+                    Where-Object { $_.options -contains 'setpwd_o' } |
+                    ForEach-Object {
+                        if($_.Type -eq 'object') {
+                            foreach($field in $_.objectfields) {
+                                @{ name = "$($_.name)_$($field)"; allowance = 'optional' }
+                            }
+                        } else {
+                            @{ name = $_.name; allowance = 'optional' }
+                        }
+                    }
+
+                $Global:Properties.$Class |
+                    Where-Object { -not ($_.options -contains 'setpwd_m' -or $_.options -contains 'setpwd_o' -or $_.options -contains 'key') } |
+                    ForEach-Object {
+                        if($_.Type -eq 'object') {
+                            foreach($field in $_.objectfields) {
+                                @{ name = "$($_.name)_$($field)"; allowance = 'prohibited' }
+                            }
+                        } else {
+                            @{ name = $_.name; allowance = 'prohibited' }
+                        }
+                    }
+            )
+        }
+
+    }
+    else {
+        #
+        # Execute function
+        #
+        $system_params   = ConvertFrom-Json2 $SystemParams
+        $function_params = ConvertFrom-Json2 $FunctionParams
+
+        $uri = "/interconnect-amcurprd-username/api/epic/2012/Security/PersonnelManagement/SetUserPassword/Personnel/User/EpicPassword?UserID=$($function_params.UserID)"
+        
+        if($function_params.UserType.length -gt 0) {
+            $uri += &UserType=$($function_params.UserType)
+        }
+        
+        $splat = @{
+            SystemParams = $system_params
+            Method = "POST"
+            Uri = $uri
+                    Body = $null
+                    Class = $Class
+                    LogMessage = "[UserID: $($function_params.UserID) UserType: $($function_params.UserType)]"
+                    LoggingEnabled = $false
+        }
+        Execute-Request @splat
+
+        LogIO info "User-Setpassword" -out $result
+        
+        #Result
+        @{
+            UserID = $function_params.UserID
+        }
+    }
+
+    Log verbose "Done"
+}
+
+function Idm-UserInfoActivate {
+    param (
+        # Operations
+        [switch] $GetMeta,
+        # Parameters
+        [string] $SystemParams,
+        [string] $FunctionParams
+    )
+
+    Log verbose "-GetMeta=$GetMeta -SystemParams='$SystemParams' -FunctionParams='$FunctionParams'"
+    $Class = 'UserInfo'
+
+    if ($GetMeta) {
+        #
+        # Get meta data
+        #
+        @{
+            semantics = 'update'
+            parameters = @(
+                $Global:Properties.$Class |
+                    Where-Object { $_.options -contains 'activate_m' -or $_.options -contains 'key' } |
+                    ForEach-Object { @{ name = $_.name; allowance = 'mandatory' } }
+
+                $Global:Properties.$Class |
+                    Where-Object { $_.options -contains 'activate_o' } |
+                    ForEach-Object {
+                        if($_.Type -eq 'object') {
+                            foreach($field in $_.objectfields) {
+                                @{ name = "$($_.name)_$($field)"; allowance = 'optional' }
+                            }
+                        } else {
+                            @{ name = $_.name; allowance = 'optional' }
+                        }
+                    }
+
+                $Global:Properties.$Class |
+                    Where-Object { -not ($_.options -contains 'activate_m' -or $_.options -contains 'activate_o' -or $_.options -contains 'key') } |
+                    ForEach-Object {
+                        if($_.Type -eq 'object') {
+                            foreach($field in $_.objectfields) {
+                                @{ name = "$($_.name)_$($field)"; allowance = 'prohibited' }
+                            }
+                        } else {
+                            @{ name = $_.name; allowance = 'prohibited' }
+                        }
+                    }
+            )
+        }
+
+    }
+    else {
+        #
+        # Execute function
+        #
+        $system_params   = ConvertFrom-Json2 $SystemParams
+        $function_params = ConvertFrom-Json2 $FunctionParams
+
+        $uri = "/interconnect-amcurprd-username/api/epic/2012/Security/PersonnelManagement/ActivateUser/Personnel/User/Activate?UserID=$($function_params.UserID)"
+        
+        if($function_params.UserType.length -gt 0) {
+            $uri += &UserType=$($function_params.UserType)
+        }
+        
+        $splat = @{
+            SystemParams = $system_params
+            Method = "POST"
+            Uri = $uri
+                    Body = $null
+                    Class = $Class
+                    LogMessage = "[UserID: $($function_params.UserID) UserType: $($function_params.UserType)]"
+                    LoggingEnabled = $false
+        }
+        Execute-Request @splat
+
+        LogIO info "User-Activate" -out $result
+        
+        #Result
+        @{
+            UserID = $function_params.UserID
+            IsActive = $true
+        }
+    }
+
+    Log verbose "Done"
+}
+
+function Idm-UserInfoInactivate {
+    param (
+        # Operations
+        [switch] $GetMeta,
+        # Parameters
+        [string] $SystemParams,
+        [string] $FunctionParams
+    )
+
+    Log verbose "-GetMeta=$GetMeta -SystemParams='$SystemParams' -FunctionParams='$FunctionParams'"
+    $Class = 'UserInfo'
+
+    if ($GetMeta) {
+        #
+        # Get meta data
+        #
+        @{
+            semantics = 'update'
+            parameters = @(
+                $Global:Properties.$Class |
+                    Where-Object { $_.options -contains 'inactivate_m' -or $_.options -contains 'key' } |
+                    ForEach-Object { @{ name = $_.name; allowance = 'mandatory' } }
+
+                $Global:Properties.$Class |
+                    Where-Object { $_.options -contains 'inactivate_o' } |
+                    ForEach-Object {
+                        if($_.Type -eq 'object') {
+                            foreach($field in $_.objectfields) {
+                                @{ name = "$($_.name)_$($field)"; allowance = 'optional' }
+                            }
+                        } else {
+                            @{ name = $_.name; allowance = 'optional' }
+                        }
+                    }
+
+                $Global:Properties.$Class |
+                    Where-Object { -not ($_.options -contains 'inactivate_m' -or $_.options -contains 'inactivate_o' -or $_.options -contains 'key') } |
+                    ForEach-Object {
+                        if($_.Type -eq 'object') {
+                            foreach($field in $_.objectfields) {
+                                @{ name = "$($_.name)_$($field)"; allowance = 'prohibited' }
+                            }
+                        } else {
+                            @{ name = $_.name; allowance = 'prohibited' }
+                        }
+                    }
+            )
+        }
+
+    }
+    else {
+        #
+        # Execute function
+        #
+        $system_params   = ConvertFrom-Json2 $SystemParams
+        $function_params = ConvertFrom-Json2 $FunctionParams
+
+        $uri = "/interconnect-amcurprd-username/api/epic/2012/Security/PersonnelManagement/InactivateUser/Personnel/User/Inactivate?UserID=$($function_params.UserID)"
+        
+        if($function_params.UserType.length -gt 0) {
+            $uri += &UserType=$($function_params.UserType)
+        }
+        
+        $splat = @{
+            SystemParams = $system_params
+            Method = "POST"
+            Uri = $uri
+                    Body = $null
+                    Class = $Class
+                    LogMessage = "[UserID: $($function_params.UserID) UserType: $($function_params.UserType)]"
+                    LoggingEnabled = $false
+        }
+        Execute-Request @splat
+
+        LogIO info "User-InActivate" -out $result
+        
+        #Result
+        @{
+            UserID = $function_params.UserID
+            IsActive = $false
+        }
+    }
+
+    Log verbose "Done"
+}
+
+function Idm-UserInfoForcepasswordchange {
+    param (
+        # Operations
+        [switch] $GetMeta,
+        # Parameters
+        [string] $SystemParams,
+        [string] $FunctionParams
+    )
+
+    Log verbose "-GetMeta=$GetMeta -SystemParams='$SystemParams' -FunctionParams='$FunctionParams'"
+    $Class = 'UserInfo'
+
+    if ($GetMeta) {
+        #
+        # Get meta data
+        #
+        @{
+            semantics = 'update'
+            parameters = @(
+                $Global:Properties.$Class |
                     Where-Object { $_.options -contains 'forcepwd_m' -or $_.options -contains 'key' } |
                     ForEach-Object { @{ name = $_.name; allowance = 'mandatory' } }
 
@@ -819,7 +1166,12 @@ function Idm-UserInfoUpdate {
         Execute-Request @splat
 
         LogIO info "User-ForcePasswordChange" -out $result
-        $result
+        
+        #Result
+        @{
+            UserID = $function_params.UserID
+            IsPasswordChangeRequired = $true
+        }
     }
 
     Log verbose "Done"
@@ -1020,6 +1372,207 @@ function Idm-UserInfo_LinkedProviderIDsRead {
         $Global:UserInfo_LinkedProviderID
 }
 
+function Idm-UserPagersRead {
+    param (
+        # Mode
+        [switch] $GetMeta,    
+        # Parameters
+        [string] $SystemParams,
+        [string] $FunctionParams
+
+    )
+        $system_params   = ConvertFrom-Json2 $SystemParams
+        $function_params = ConvertFrom-Json2 $FunctionParams
+        $Class = 'UserPager'
+        
+        if ($GetMeta) {
+            Get-ClassMetaData -SystemParams $SystemParams -Class $Class
+            return
+        }
+
+        # Refresh cache if needed
+        if ($Global:Users.Count -eq 0) {
+            Idm-UsersRead -SystemParams $SystemParams -FunctionParams $FunctionParams | Out-Null
+        }
+
+        # Precompute property template
+        $properties = $Global:Properties.$Class | Where-Object { ('hidden' -notin $_.options ) }
+        $propertiesHT = @{}; $Global:Properties.$Class | ForEach-Object { $propertiesHT[$_.name] = $_ }
+
+        $template = [ordered]@{}
+        foreach ($prop in $properties.Name) {
+            $template[$prop] = $null
+        }
+        
+        # Prepare runspace pool
+        $cancellationSource = [System.Threading.CancellationTokenSource]::new()
+        $cancellationToken = $cancellationSource.Token
+        $system_params.CancellationSource = $cancellationSource
+
+        $runspacePool = [runspacefactory]::CreateRunspacePool(1, [int]$system_params.nr_of_threads)
+        $runspacePool.Open()
+        $runspaces = @()
+
+        # Index for tracking
+        $index = 0
+
+        $funcDef = "function Execute-Request { $((Get-Command Execute-Request -CommandType Function).ScriptBlock.ToString()) }"
+
+        foreach ($item in $Global:User) {
+            if ($Global:CancellationSource.IsCancellationRequested) {
+                Log warning "Execution canceled due to 503 error. Skipping remaining runspaces."
+                break
+            }
+
+            $runspace = [powershell]::Create().AddScript($funcDef).AddScript({
+                param($item, $system_params, $Class, $template, $index)
+                
+                $itemResult = @{
+                    rows = @()
+                    logMessage = $null
+                }
+
+                $splat = @{
+                    SystemParams = $system_params
+                    Method = "POST"
+                    Uri = '/interconnect-amcurprd-username/api/epic/2017/Security/PersonnelManagement/GetUserPagerID/GetUserPagerID'
+                    Body = (@{ "UserID" = @{ "ID" = $item.ID; "Type"= "EXTERNAL"}}) | ConvertTo-Json
+                    Class = $Class
+                    LogMessage = "[$($item.ID)]"
+                    LoggingEnabled = $false
+                }
+
+                try {
+                    $response = Execute-Request @splat
+                } catch {
+                    $itemResult.logMessage = "Retrieve User Pagers [$($item.ID)] - $_"
+                    return $itemResult
+                }
+
+                $row = New-Object -TypeName PSObject -Property $template
+                $row.UserID = $item.Id
+                $row.PagerID = $response.PagerID
+                $itemResult.rows += $row
+
+                return $itemResult
+            }).AddArgument($item).AddArgument($system_params).AddArgument($Class).AddArgument($template).AddArgument($index)
+
+            $runspace.RunspacePool = $runspacePool
+            $runspaces += [PSCustomObject]@{ Pipe = $runspace; Status = $runspace.BeginInvoke(); Index = $index }
+            $index++
+        }
+
+        # Collect results
+        $total = $runspaces.Count
+        $completed = 0
+
+        $result = @()
+        foreach ($r in $runspaces) {
+            $output = $r.Pipe.EndInvoke($r.Status)
+            $completed++
+
+            if ($completed % 250 -eq 0 -or $completed -eq $total) {
+                $percent = [math]::Round(($completed / $total) * 100, 2)
+                Log info "Progress: [$completed/$total] requests completed ($percent%)"
+            }
+
+            if($null -ne $output.logMessage) {
+                Log verbose $output.logMessage
+            }
+
+            $result += $output.rows
+
+            $r.Pipe.Dispose()
+        }
+
+        $runspacePool.Close()
+        $runspacePool.Dispose()
+
+        # Final output
+        $result
+}
+
+function Idm-UserPagerUpdate {
+    param (
+        # Operations
+        [switch] $GetMeta,
+        # Parameters
+        [string] $SystemParams,
+        [string] $FunctionParams
+    )
+
+    Log verbose "-GetMeta=$GetMeta -SystemParams='$SystemParams' -FunctionParams='$FunctionParams'"
+    $Class = 'UserInfo'
+
+    if ($GetMeta) {
+        #
+        # Get meta data
+        #
+        @{
+            semantics = 'update'
+            parameters = @(
+                $Global:Properties.$Class |
+                    Where-Object { $_.options -contains 'update_m' -or $_.options -contains 'key' } |
+                    ForEach-Object { @{ name = $_.name; allowance = 'mandatory' } }
+
+                $Global:Properties.$Class |
+                    Where-Object { $_.options -contains 'update_o' } |
+                    ForEach-Object {
+                        if($_.Type -eq 'object') {
+                            foreach($field in $_.objectfields) {
+                                @{ name = "$($_.name)_$($field)"; allowance = 'optional' }
+                            }
+                        } else {
+                            @{ name = $_.name; allowance = 'optional' }
+                        }
+                    }
+
+                $Global:Properties.$Class |
+                    Where-Object { -not ($_.options -contains 'update_m' -or $_.options -contains 'update_o' -or $_.options -contains 'key') } |
+                    ForEach-Object {
+                        if($_.Type -eq 'object') {
+                            foreach($field in $_.objectfields) {
+                                @{ name = "$($_.name)_$($field)"; allowance = 'prohibited' }
+                            }
+                        } else {
+                            @{ name = $_.name; allowance = 'prohibited' }
+                        }
+                    }
+            )
+        }
+
+    }
+    else {
+        #
+        # Execute function
+        #
+        $system_params   = ConvertFrom-Json2 $SystemParams
+        $function_params = ConvertFrom-Json2 $FunctionParams
+
+        $uri = "/interconnect-amcurprd-username/api/epic/2017/Security/PersonnelManagement/SetUserPagerID/SetUserPagerID?UserID=$($function_params.UserID)&PagerID=$($function_params.PagerID)"
+        
+        $splat = @{
+            SystemParams = $system_params
+            Method = "POST"
+            Uri = $uri
+                    Body = $null
+                    Class = $Class
+                    LogMessage = "[UserID: $($function_params.UserID) UserType: $($function_params.UserType)]"
+                    LoggingEnabled = $false
+        }
+        Execute-Request @splat
+
+        LogIO info "UserPager-Update" -out $result
+        
+        #Result
+        @{
+            UserID = $function_params.UserID
+        }
+    }
+
+    Log verbose "Done"
+}
+
 #
 #   Internal Functions
 #
@@ -1188,12 +1741,11 @@ function Execute-Request {
         Uri = ("https://{0}{1}" -f $SystemParams.hostname, $uri)
     }
 
-    <#
-    if(@('PATCH','PUT','POST') -contains $method ) { 
+    
+    if(@('PATCH','PUT','POST') -contains $method  -and $Body.Length -gt 0) { 
         $splat.Body = $Body 
         $splat.Headers.'Content-Type' = "application/json"
     }
-    #>
 
     # Configure proxy if enabled
     if ($SystemParams.use_proxy) {
