@@ -35,8 +35,8 @@ $Properties = @{
         @{ name = 'Name';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
         @{ name = 'ContactComment';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
         @{ name = 'LDAPOverrideID';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
-        @{ name = 'IsPasswordChangeRequired';            type = 'string';   objectfields = $null;             options = @('default') },
-        @{ name = 'IsActive';            type = 'string';   objectfields = $null;             options = @('default','create_o','activate_m') },
+        @{ name = 'IsPasswordChangeRequired';            type = 'string';   objectfields = $null;             options = @('default','forcepwd_m') },
+        @{ name = 'IsActive';            type = 'string';   objectfields = $null;             options = @('default','create_o','activate_m','inactivate_m') },
         @{ name = 'StartDate';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
         @{ name = 'EndDate';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
         @{ name = 'UserAlias';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
@@ -55,9 +55,9 @@ $Properties = @{
         @{ name = 'InBasketClassifications';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
         @{ name = 'UserDirectoryPath';            type = 'string';   objectfields = $null;             options = @('default') },
         @{ name = 'ProviderAtLoginOption';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
-        @{ name = 'UserComplexName';            type = 'object';   objectfields = @('FirstName','GivenNameInitials','MiddleName','LastName','LastNamePrefix','SpouseLastName','SpousePrefix','Suffix','AcademicTitle','PrimaryTitle','SpouseLastNameFirst','FatherName','GrandfatherName');             options = @('default','create_o') },
+        @{ name = 'UserComplexName';            type = 'object';   objectfields = @('FirstName','GivenNameInitials','MiddleName','LastName','LastNamePrefix','SpouseLastName','SpousePrefix','Suffix','AcademicTitle','PrimaryTitle','SpouseLastNameFirst','FatherName','GrandfatherName');             options = @('default','create_o','update_o') },
         @{ name = 'AuthenticationConfigurationID';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
-        @{ name = 'BlockStatus';            type = 'object';   objectfields = @('IsBlocked','Reason','Comment');             options = @('default','create_o') },
+        @{ name = 'BlockStatus';            type = 'object';   objectfields = @('IsBlocked','Reason','Comment');             options = @('default','create_o','update_o') },
         @{ name = 'EmployeeDemographics';            type = 'string';   objectfields = $null;             options = @('default') },
         @{ name = 'PrimaryManager';            type = 'string';   objectfields = $null;             options = @('default') },
         @{ name = 'UsersManagers';            type = 'string';   objectfields = $null;             options = @('default') },
@@ -65,7 +65,7 @@ $Properties = @{
         @{ name = 'CustomUserDictionaries';            type = 'string';   objectfields = $null;             options = @('default') },
         @{ name = 'ExternalIdentifiers';            type = 'string';   objectfields = $null;             options = @('default') },
         @{ name = 'UserInternalID';            type = 'string';   objectfields = $null;             options = @('create_m') }
-        @{ name = 'NewPassword';            type = 'string';   objectfields = $null;             options = @('setpassword_m') }
+        @{ name = 'NewPassword';            type = 'string';   objectfields = $null;             options = @('setpwd_m') }
     )
     UserInfo_UserID = @(
         @{ name = 'UserID';              type = 'string';   objectfields = $null;             options = @('default') },
@@ -842,7 +842,6 @@ function Idm-UserInfoSetpassword {
         [string] $SystemParams,
         [string] $FunctionParams
     )
-
     Log verbose "-GetMeta=$GetMeta -SystemParams='$SystemParams' -FunctionParams='$FunctionParams'"
     $Class = 'UserInfo'
 
@@ -894,14 +893,16 @@ function Idm-UserInfoSetpassword {
         $uri = "/api/epic/2012/Security/PersonnelManagement/SetUserPassword/Personnel/User/EpicPassword?UserID=$($function_params.UserID)"
         
         if($function_params.UserType.length -gt 0) {
-            $uri += &UserType=$($function_params.UserType)
+            $uri += &UserIDType=$($function_params.UserType)
         }
         
         $splat = @{
             SystemParams = $system_params
-            Method = "POST"
+            Method = "PUT"
             Uri = $uri
-                    Body = $null
+                    Body = (@{
+                        NewPassword = $function_params.NewPassword
+                    } | ConvertTo-JSON)
                     Class = $Class
                     LogMessage = "[UserID: $($function_params.UserID) Type: $($function_params.UserType)]"
                     LoggingEnabled = $false
@@ -979,7 +980,7 @@ function Idm-UserInfoActivate {
         $uri = "/api/epic/2012/Security/PersonnelManagement/ActivateUser/Personnel/User/Activate?UserID=$($function_params.UserID)"
         
         if($function_params.UserType.length -gt 0) {
-            $uri += &UserType=$($function_params.UserType)
+            $uri += &UserIDType=$($function_params.UserType)
         }
         
         $splat = @{
@@ -1065,7 +1066,7 @@ function Idm-UserInfoInactivate {
         $uri = "/api/epic/2012/Security/PersonnelManagement/InactivateUser/Personnel/User/Inactivate?UserID=$($function_params.UserID)"
         
         if($function_params.UserType.length -gt 0) {
-            $uri += &UserType=$($function_params.UserType)
+            $uri += &UserIDType=$($function_params.UserType)
         }
         
         $splat = @{
@@ -1151,7 +1152,7 @@ function Idm-UserInfoForcepasswordchange {
         $uri = "/api/epic/2012/Security/PersonnelManagement/ForcePasswordChange/Personnel/User/ForcePasswordChange?UserID=$($function_params.UserID)"
         
         if($function_params.UserType.length -gt 0) {
-            $uri += &UserType=$($function_params.UserType)
+            $uri += &UserIDType=$($function_params.UserType)
         }
         
         $splat = @{
@@ -1549,13 +1550,13 @@ function Idm-UserPagerUpdate {
         $system_params   = ConvertFrom-Json2 $SystemParams
         $function_params = ConvertFrom-Json2 $FunctionParams
 
-        $uri = "/api/epic/2017/Security/PersonnelManagement/SetUserPagerID/SetUserPagerID?UserID=$($function_params.UserID)&PagerID=$($function_params.PagerID)"
+        $uri = "/api/epic/2017/Security/PersonnelManagement/SetUserPagerID/SetUserPagerID?PagerID=$($function_params.PagerID)"
         
         $splat = @{
             SystemParams = $system_params
             Method = "POST"
             Uri = $uri
-                    Body = $null
+                    Body = (@{ UserID = @{ ID = $function_params.UserID }} | ConvertTo-Json)
                     Class = $Class
                     LogMessage = "[UserID: $($function_params.UserID) Type: $($function_params.UserType)]"
                     LoggingEnabled = $false
