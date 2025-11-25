@@ -14,6 +14,7 @@ $Global:UserInfo_UserRoleIDs = [System.Collections.ArrayList]@()
 $Global:UserInfo_LinkedTemplatesConfig = [System.Collections.ArrayList]@()
 $Global:UserInfo_UserSubtemplateIDs = [System.Collections.ArrayList]@()
 $Global:UserInfo_LinkedProviderID = [System.Collections.ArrayList]@()
+$Global:UserInfo_UsersManagers = [System.Collections.ArrayList]@()
 
 $Global:CancellationSource = [System.Threading.CancellationTokenSource]::new()
 
@@ -33,39 +34,41 @@ $Properties = @{
         @{ name = 'UserID';            type = 'string';   objectfields = $null;             options = @('default','key','create_m') },
         @{ name = 'UserType';            type = 'string';   objectfields = $null;             options = @('update_m','forcepwd_o','activate_o','inactivate_o','setpwd_o') },
         @{ name = 'Name';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
-        @{ name = 'ContactComment';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
-        @{ name = 'LDAPOverrideID';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
+        @{ name = 'ContactComment';            type = 'string';   objectfields = $null;             options = @('default','create_o','update_o') },
+        @{ name = 'ContactDate';            type = 'string';   objectfields = $null;             options = @('default','create_o','update_o') },
+        @{ name = 'LDAPOverrideID';            type = 'string';   objectfields = $null;             options = @('default','create_o','update_o') },
         @{ name = 'IsPasswordChangeRequired';            type = 'string';   objectfields = $null;             options = @('default','forcepwd_m') },
         @{ name = 'IsActive';            type = 'string';   objectfields = $null;             options = @('default','create_o','activate_m','inactivate_m') },
-        @{ name = 'StartDate';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
-        @{ name = 'EndDate';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
-        @{ name = 'UserAlias';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
-        @{ name = 'UserPhotoPath';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
-        @{ name = 'Sex';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
-        @{ name = 'ReportGrouper1';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
-        @{ name = 'ReportGrouper2';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
-        @{ name = 'ReportGrouper3';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
-        @{ name = 'CategoryReportGrouper1';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
-        @{ name = 'CategoryReportGrouper2';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
-        @{ name = 'CategoryReportGrouper3';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
-        @{ name = 'CategoryReportGrouper4';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
-        @{ name = 'CategoryReportGrouper5';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
-        @{ name = 'CategoryReportGrouper6';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
-        @{ name = 'Notes';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
-        @{ name = 'InBasketClassifications';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
+        @{ name = 'StartDate';            type = 'string';   objectfields = $null;             options = @('default','create_o','update_o') },
+        @{ name = 'EndDate';            type = 'string';   objectfields = $null;             options = @('default','create_o','update_o') },
+        @{ name = 'UserAlias';            type = 'string';   objectfields = $null;             options = @('default','create_o','update_o') },
+        @{ name = 'UserPhotoPath';            type = 'string';   objectfields = $null;             options = @('default','create_o','update_o') },
+        @{ name = 'Sex';            type = 'string';   objectfields = $null;             options = @('default','create_o','update_o') },
+        @{ name = 'ReportGrouper1';            type = 'string';   objectfields = $null;             options = @('default','create_o','update_o') },
+        @{ name = 'ReportGrouper2';            type = 'string';   objectfields = $null;             options = @('default','create_o','update_o') },
+        @{ name = 'ReportGrouper3';            type = 'string';   objectfields = $null;             options = @('default','create_o','update_o') },
+        @{ name = 'CategoryReportGrouper1';            type = 'string';   objectfields = $null;             options = @('default','create_o','update_o') },
+        @{ name = 'CategoryReportGrouper2';            type = 'string';   objectfields = $null;             options = @('default','create_o','update_o') },
+        @{ name = 'CategoryReportGrouper3';            type = 'string';   objectfields = $null;             options = @('default','create_o','update_o') },
+        @{ name = 'CategoryReportGrouper4';            type = 'string';   objectfields = $null;             options = @('default','create_o','update_o') },
+        @{ name = 'CategoryReportGrouper5';            type = 'string';   objectfields = $null;             options = @('default','create_o','update_o') },
+        @{ name = 'CategoryReportGrouper6';            type = 'string';   objectfields = $null;             options = @('default','create_o','update_o') },
+        @{ name = 'Notes';            type = 'string';   objectfields = $null;             options = @('default','create_o','update_o') },
+        @{ name = 'InBasketClassifications';            type = 'string';   objectfields = $null;             options = @('default','create_o','update_o') },
         @{ name = 'UserDirectoryPath';            type = 'string';   objectfields = $null;             options = @('default') },
-        @{ name = 'ProviderAtLoginOption';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
+        @{ name = 'ProviderAtLoginOption';            type = 'string';   objectfields = $null;             options = @('default','create_o','update_o') },
         @{ name = 'UserComplexName';            type = 'object';   objectfields = @('FirstName','GivenNameInitials','MiddleName','LastName','LastNamePrefix','SpouseLastName','SpousePrefix','Suffix','AcademicTitle','PrimaryTitle','SpouseLastNameFirst','FatherName','GrandfatherName');             options = @('default','create_o','update_o') },
         @{ name = 'AuthenticationConfigurationID';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
         @{ name = 'BlockStatus';            type = 'object';   objectfields = @('IsBlocked','Reason','Comment');             options = @('default','create_o','update_o') },
         @{ name = 'EmployeeDemographics';            type = 'string';   objectfields = $null;             options = @('default') },
         @{ name = 'PrimaryManager';            type = 'string';   objectfields = $null;             options = @('default') },
         @{ name = 'UsersManagers';            type = 'string';   objectfields = $null;             options = @('default') },
-        @{ name = 'DefaultLoginDepartmentID';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
+        @{ name = 'DefaultLoginDepartmentID';            type = 'string';   objectfields = $null;             options = @('default','create_o','update_o') },
         @{ name = 'CustomUserDictionaries';            type = 'string';   objectfields = $null;             options = @('default') },
         @{ name = 'ExternalIdentifiers';            type = 'string';   objectfields = $null;             options = @('default') },
         @{ name = 'UserInternalID';            type = 'string';   objectfields = $null;             options = @('create_m') }
         @{ name = 'NewPassword';            type = 'string';   objectfields = $null;             options = @('setpwd_m') }
+        @{ name = 'SystenLoginID';            type = 'string';   objectfields = $null;             options = @('update_o') }
     )
     UserInfo_UserID = @(
         @{ name = 'UserID';              type = 'string';   objectfields = $null;             options = @('default') },
@@ -93,6 +96,12 @@ $Properties = @{
         @{ name = 'UserID';              type = 'string';   objectfields = $null;             options = @('default') },
         @{ name = 'ID';              type = 'string';   objectfields = $null;             options = @('default') }
         @{ name = 'Type';              type = 'string';   objectfields = $null;             options = @('default') }
+    )
+    UserInfo_UserManager = @(
+        @{ name = 'UserID';              type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'ID';              type = 'string';   objectfields = $null;             options = @('default') }
+        @{ name = 'Type';              type = 'string';   objectfields = $null;             options = @('default') }
+        @{ name = 'Index';              type = 'string';   objectfields = $null;             options = @('default') }
     )
     UserPager = @(
         @{ name = 'UserID';              type = 'string';   objectfields = $null;             options = @('key') },
@@ -626,6 +635,15 @@ function Idm-UserInfosRead {
                     if($prop.Name -eq 'LinkedProviderID') {
                         foreach($record in $prop.Value) {
                                 [void]$itemResult.subResultLinkedProviderID.Add([PSCustomObject]@{ "UserID" = $row.UserID; "ID" = $record.ID; "Type" = $record.Type; })
+                        }
+                        continue
+                    }
+
+                    if($prop.Name -eq 'UsersManagers') {
+                        foreach($record in $prop.Value) {
+                            foreach($subRecord in $record.Identifiers) {
+                                [void]$itemResult.UsersManagers.Add([PSCustomObject]@{ "UserID" = $row.UserID; "Index" = $record.Index; "ID" = $subRecord.ID; "Type" = $subRecord.Type; })
+                            }
                         }
                         continue
                     }
@@ -1371,6 +1389,32 @@ function Idm-UserInfo_LinkedProviderIDsRead {
         }
 
         $Global:UserInfo_LinkedProviderID
+}
+
+function Idm-UserInfo_UsersManagersRead {
+    param (
+        # Mode
+        [switch] $GetMeta,    
+        # Parameters
+        [string] $SystemParams,
+        [string] $FunctionParams
+
+    )
+        $system_params   = ConvertFrom-Json2 $SystemParams
+        $function_params = ConvertFrom-Json2 $FunctionParams
+        $Class = 'UserInfo_UserManager'
+        
+        if ($GetMeta) {
+            Get-ClassMetaData -SystemParams $SystemParams -Class $Class
+            return
+        }
+
+        # Refresh cache if needed
+        if ($Global:UserInfo.Count -eq 0) {
+            Idm-UserInfosRead -SystemParams $SystemParams -FunctionParams $FunctionParams | Out-Null
+        }
+
+        $Global:UserInfo_UserManagers
 }
 
 function Idm-UserPagersRead {
