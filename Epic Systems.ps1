@@ -36,7 +36,7 @@ $Properties = @{
         @{ name = 'ContactComment';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
         @{ name = 'LDAPOverrideID';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
         @{ name = 'IsPasswordChangeRequired';            type = 'string';   objectfields = $null;             options = @('default') },
-        @{ name = 'IsActive';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
+        @{ name = 'IsActive';            type = 'string';   objectfields = $null;             options = @('default','create_o','activate_m') },
         @{ name = 'StartDate';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
         @{ name = 'EndDate';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
         @{ name = 'UserAlias';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
@@ -294,7 +294,7 @@ function Idm-UsersRead {
                 $splat = @{ 
                         SystemParams = $system_params
                         Class = $Class
-                        Uri = '/interconnect-amcurprd-personnel-username/httplistener.ashx'
+                        Uri = '/httplistener.ashx'
                         Action = 'urn:epicsystems-com:Core.2008-04.Services.GetUserRecords'
                         ActionResponse = 'urn:epicsystems-com:Core.2008-04.Services.GetUserRecords'
                         Body = ''
@@ -427,8 +427,8 @@ function Idm-UserGroupsRead {
                 $splat = @{
                     SystemParams = $system_params
                     Method = "POST"
-                    Uri = '/interconnect-amcurprd-username/api/epic/2016/Security/PersonnelManagement/ViewUserGroups/Personnel/User/Groups/View'
-                    Body = (@{ "UserID" = @{ "ID" = $item.ID; "Type"= "EXTERNAL"}}) | ConvertTo-Json
+                    Uri = '/api/epic/2016/Security/PersonnelManagement/ViewUserGroups/Personnel/User/Groups/View'
+                    Body = (@{ "UserID" = @{ "ID" = $item.ID;}}) | ConvertTo-Json
                     Class = $Class
                     LogMessage = "[$($item.ID)]"
                     LoggingEnabled = $false
@@ -559,7 +559,7 @@ function Idm-UserInfosRead {
 
                 $splat = @{
                     SystemParams = $system_params
-                    Uri = "/interconnect-amcurprd-username/api/epic/2014/Security/PersonnelManagement/ViewUser?UserID=$($item.ID)&UserType=EXTERNAL"
+                    Uri = "/api/epic/2014/Security/PersonnelManagement/ViewUser?UserID=$($item.ID)"
                     Body = $null
                     Class = $Class
                     LogMessage = "[$($item.ID)]"
@@ -808,7 +808,7 @@ function Idm-UserInfoUpdate {
         $system_params   = ConvertFrom-Json2 $SystemParams
         $function_params = ConvertFrom-Json2 $FunctionParams
 
-        $uri = "/interconnect-amcurprd-username/api/epic/2012/Security/PersonnelManagement/ForcePasswordChange/Personnel/User/Update?UserID=$($function_params.UserID)"
+        $uri = "/api/epic/2012/Security/PersonnelManagement/ForcePasswordChange/Personnel/User/Update?UserID=$($function_params.UserID)"
         
 
         foreach($property in $function_params) {
@@ -822,7 +822,7 @@ function Idm-UserInfoUpdate {
             Uri = $uri
                     Body = $null
                     Class = $Class
-                    LogMessage = "[UserID: $($function_params.UserID) UserType: $($function_params.UserType)]"
+                    LogMessage = "[UserID: $($function_params.UserID) Type: $($function_params.UserType)]"
                     LoggingEnabled = $false
         }
         Execute-Request @splat
@@ -891,7 +891,7 @@ function Idm-UserInfoSetpassword {
         $system_params   = ConvertFrom-Json2 $SystemParams
         $function_params = ConvertFrom-Json2 $FunctionParams
 
-        $uri = "/interconnect-amcurprd-username/api/epic/2012/Security/PersonnelManagement/SetUserPassword/Personnel/User/EpicPassword?UserID=$($function_params.UserID)"
+        $uri = "/api/epic/2012/Security/PersonnelManagement/SetUserPassword/Personnel/User/EpicPassword?UserID=$($function_params.UserID)"
         
         if($function_params.UserType.length -gt 0) {
             $uri += &UserType=$($function_params.UserType)
@@ -903,7 +903,7 @@ function Idm-UserInfoSetpassword {
             Uri = $uri
                     Body = $null
                     Class = $Class
-                    LogMessage = "[UserID: $($function_params.UserID) UserType: $($function_params.UserType)]"
+                    LogMessage = "[UserID: $($function_params.UserID) Type: $($function_params.UserType)]"
                     LoggingEnabled = $false
         }
         Execute-Request @splat
@@ -976,7 +976,7 @@ function Idm-UserInfoActivate {
         $system_params   = ConvertFrom-Json2 $SystemParams
         $function_params = ConvertFrom-Json2 $FunctionParams
 
-        $uri = "/interconnect-amcurprd-username/api/epic/2012/Security/PersonnelManagement/ActivateUser/Personnel/User/Activate?UserID=$($function_params.UserID)"
+        $uri = "/api/epic/2012/Security/PersonnelManagement/ActivateUser/Personnel/User/Activate?UserID=$($function_params.UserID)"
         
         if($function_params.UserType.length -gt 0) {
             $uri += &UserType=$($function_params.UserType)
@@ -988,7 +988,7 @@ function Idm-UserInfoActivate {
             Uri = $uri
                     Body = $null
                     Class = $Class
-                    LogMessage = "[UserID: $($function_params.UserID) UserType: $($function_params.UserType)]"
+                    LogMessage = "[UserID: $($function_params.UserID) Type: $($function_params.UserType)]"
                     LoggingEnabled = $false
         }
         Execute-Request @splat
@@ -1062,7 +1062,7 @@ function Idm-UserInfoInactivate {
         $system_params   = ConvertFrom-Json2 $SystemParams
         $function_params = ConvertFrom-Json2 $FunctionParams
 
-        $uri = "/interconnect-amcurprd-username/api/epic/2012/Security/PersonnelManagement/InactivateUser/Personnel/User/Inactivate?UserID=$($function_params.UserID)"
+        $uri = "/api/epic/2012/Security/PersonnelManagement/InactivateUser/Personnel/User/Inactivate?UserID=$($function_params.UserID)"
         
         if($function_params.UserType.length -gt 0) {
             $uri += &UserType=$($function_params.UserType)
@@ -1074,7 +1074,7 @@ function Idm-UserInfoInactivate {
             Uri = $uri
                     Body = $null
                     Class = $Class
-                    LogMessage = "[UserID: $($function_params.UserID) UserType: $($function_params.UserType)]"
+                    LogMessage = "[UserID: $($function_params.UserID) Type: $($function_params.UserType)]"
                     LoggingEnabled = $false
         }
         Execute-Request @splat
@@ -1148,7 +1148,7 @@ function Idm-UserInfoForcepasswordchange {
         $system_params   = ConvertFrom-Json2 $SystemParams
         $function_params = ConvertFrom-Json2 $FunctionParams
 
-        $uri = "/interconnect-amcurprd-username/api/epic/2012/Security/PersonnelManagement/ForcePasswordChange/Personnel/User/ForcePasswordChange?UserID=$($function_params.UserID)"
+        $uri = "/api/epic/2012/Security/PersonnelManagement/ForcePasswordChange/Personnel/User/ForcePasswordChange?UserID=$($function_params.UserID)"
         
         if($function_params.UserType.length -gt 0) {
             $uri += &UserType=$($function_params.UserType)
@@ -1160,7 +1160,7 @@ function Idm-UserInfoForcepasswordchange {
             Uri = $uri
                     Body = $null
                     Class = $Class
-                    LogMessage = "[UserID: $($function_params.UserID) UserType: $($function_params.UserType)]"
+                    LogMessage = "[UserID: $($function_params.UserID) Type: $($function_params.UserType)]"
                     LoggingEnabled = $false
         }
         Execute-Request @splat
@@ -1222,7 +1222,7 @@ function Idm-UserInfoDelete {
         $system_params   = ConvertFrom-Json2 $SystemParams
         $function_params = ConvertFrom-Json2 $FunctionParams
 
-        $uri = "/interconnect-amcurprd-username/api/epic/2012/Security/PersonnelManagement/DeleteUser/Personnel/User/Delete?UserID=$($function_params.UserID)"
+        $uri = "/api/epic/2012/Security/PersonnelManagement/DeleteUser/Personnel/User/Delete?UserID=$($function_params.UserID)"
         
         $splat = @{
             SystemParams = $system_params
@@ -1435,8 +1435,8 @@ function Idm-UserPagersRead {
                 $splat = @{
                     SystemParams = $system_params
                     Method = "POST"
-                    Uri = '/interconnect-amcurprd-username/api/epic/2017/Security/PersonnelManagement/GetUserPagerID/GetUserPagerID'
-                    Body = (@{ "UserID" = @{ "ID" = $item.ID; "Type"= "EXTERNAL"}}) | ConvertTo-Json
+                    Uri = '/api/epic/2017/Security/PersonnelManagement/GetUserPagerID/GetUserPagerID'
+                    Body = (@{ "UserID" = @{ "ID" = $item.ID }}) | ConvertTo-Json
                     Class = $Class
                     LogMessage = "[$($item.ID)]"
                     LoggingEnabled = $false
@@ -1549,7 +1549,7 @@ function Idm-UserPagerUpdate {
         $system_params   = ConvertFrom-Json2 $SystemParams
         $function_params = ConvertFrom-Json2 $FunctionParams
 
-        $uri = "/interconnect-amcurprd-username/api/epic/2017/Security/PersonnelManagement/SetUserPagerID/SetUserPagerID?UserID=$($function_params.UserID)&PagerID=$($function_params.PagerID)"
+        $uri = "/api/epic/2017/Security/PersonnelManagement/SetUserPagerID/SetUserPagerID?UserID=$($function_params.UserID)&PagerID=$($function_params.PagerID)"
         
         $splat = @{
             SystemParams = $system_params
@@ -1557,7 +1557,7 @@ function Idm-UserPagerUpdate {
             Uri = $uri
                     Body = $null
                     Class = $Class
-                    LogMessage = "[UserID: $($function_params.UserID) UserType: $($function_params.UserType)]"
+                    LogMessage = "[UserID: $($function_params.UserID) Type: $($function_params.UserType)]"
                     LoggingEnabled = $false
         }
         Execute-Request @splat
@@ -1626,7 +1626,7 @@ function Execute-SOAPRequest {
         xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
             <s:Header>
                 <wsa:MessageID>uuid:{0}</wsa:MessageID>
-                <wsa:To s:mustUnderstand="1">https://vendorservices.epic.com/interconnect-amcurprd-personnel-username/httplistener.ashx</wsa:To>
+                <wsa:To s:mustUnderstand="1">https://vendorservices.epic.com/httplistener.ashx</wsa:To>
                 <wsa:Action s:mustUnderstand="1">{1}</wsa:Action>
                 <wsse:Security s:mustUnderstand="1">
                     <wsu:Timestamp wsu:Id="TS-1">
