@@ -15,6 +15,9 @@ $Global:UserInfo_LinkedTemplatesConfig = [System.Collections.ArrayList]@()
 $Global:UserInfo_UserSubtemplateIDs = [System.Collections.ArrayList]@()
 $Global:UserInfo_LinkedProviderID = [System.Collections.ArrayList]@()
 $Global:UserInfo_UsersManagers = [System.Collections.ArrayList]@()
+$Global:UserInfo_ExternalIdentifiers = [System.Collections.ArrayList]@()
+$Global:UserInfo_IdentityIDs = [System.Collections.ArrayList]@()
+$Global:UserInfo_DefaultLoginDepartmentIDs = [System.Collections.ArrayList]@()
 
 $Global:CancellationSource = [System.Threading.CancellationTokenSource]::new()
 
@@ -75,11 +78,17 @@ $Properties = @{
         @{ name = 'ID';              type = 'string';   objectfields = $null;             options = @('default') }
         @{ name = 'Type';              type = 'string';   objectfields = $null;             options = @('default') }
     )
-    
+    UserInfo_ExternalIdentifier = @(
+        @{ name = 'UserID';              type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'Identifier';              type = 'string';   objectfields = $null;             options = @('default') }
+        @{ name = 'IdentifierType';              type = 'string';   objectfields = $null;             options = @('default') }
+        @{ name = 'IsActive';              type = 'boolean';   objectfields = $null;             options = @('default') }
+    )
     UserInfo_UserRoleID = @(
         @{ name = 'UserID';              type = 'string';   objectfields = $null;             options = @('default') },
         @{ name = 'ID';              type = 'string';   objectfields = $null;             options = @('default') }
         @{ name = 'Type';              type = 'string';   objectfields = $null;             options = @('default') }
+        @{ name = 'Index';              type = 'string';   objectfields = $null;             options = @('default') }
     )
     UserInfo_LinkedTemplatesConfig = @(
         @{ name = 'UserID';              type = 'string';   objectfields = $null;             options = @('default') },
@@ -102,6 +111,16 @@ $Properties = @{
         @{ name = 'ID';              type = 'string';   objectfields = $null;             options = @('default') }
         @{ name = 'Type';              type = 'string';   objectfields = $null;             options = @('default') }
         @{ name = 'Index';              type = 'string';   objectfields = $null;             options = @('default') }
+    )
+    UserInfo_IdentityID = @(
+        @{ name = 'UserID';              type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'ID';              type = 'string';   objectfields = $null;             options = @('default') }
+        @{ name = 'Type';              type = 'string';   objectfields = $null;             options = @('default') }
+    )
+    UserInfo_DefaultLoginDepartmentID = @(
+        @{ name = 'UserID';              type = 'string';   objectfields = $null;             options = @('default') },
+        @{ name = 'ID';              type = 'string';   objectfields = $null;             options = @('default') }
+        @{ name = 'Type';              type = 'string';   objectfields = $null;             options = @('default') }
     )
     UserPager = @(
         @{ name = 'UserID';              type = 'string';   objectfields = $null;             options = @('key') },
@@ -366,7 +385,7 @@ function Idm-UsersRead {
                 # Continue if any values are non-empty
                 $hasMore = ($searchStateContext.Identifier -or $searchStateContext.ResumeInfo -or $searchStateContext.CriteriaHash)
 #break
-if($i -ge 50) { break }
+#if($i -ge 50) { break }
             } while ($hasMore)
         }
         
@@ -563,6 +582,10 @@ function Idm-UserInfosRead {
                     subResultLinkedTemplatesConfig = [System.Collections.ArrayList]@()
                     subResultUserSubtemplateIDs = [System.Collections.ArrayList]@()
                     subResultLinkedProviderID = [System.Collections.ArrayList]@()
+                    subResultUsersManagers = [System.Collections.ArrayList]@()
+                    subResultExternalIdentifiers = [System.Collections.ArrayList]@()
+                    subResultIdentityIDs = [System.Collections.ArrayList]@()
+                    subResultDefaultLoginDepartmentIDs = [System.Collections.ArrayList]@()
                     logMessage = $null
                 }
 
@@ -587,7 +610,6 @@ function Idm-UserInfosRead {
 
                 foreach ($prop in $response.PSObject.Properties) {     
 
-                    if($prop.Name -eq 'IsActive') { 'isActive' | Out-File 'C:\temp2\epicread.txt' -Append}
                     if($prop.Name -eq 'UserIDs') {
                         foreach($record in $prop.Value) {
                             [void]$itemResult.subResultUserIDs.Add([PSCustomObject]@{ "UserID" = $row.UserID; "ID" = $record.ID; "Type" = $record.Type; })
@@ -598,7 +620,7 @@ function Idm-UserInfosRead {
                     if($prop.Name -eq 'UserRoleIDs') {
                         foreach($record in $prop.Value) {
                             foreach($subRecord in $record.Identifiers) {
-                                [void]$itemResult.subResultUserRoleIDs.Add([PSCustomObject]@{ "UserID" = $row.UserID; "ID" = $subRecord.ID; "Type" = $subRecord.Type; })
+                                [void]$itemResult.subResultUserRoleIDs.Add([PSCustomObject]@{ "UserID" = $row.UserID; "Index" = $row.Index; "ID" = $subRecord.ID; "Type" = $subRecord.Type; })
                             }
                         }
                         continue
@@ -642,8 +664,29 @@ function Idm-UserInfosRead {
                     if($prop.Name -eq 'UsersManagers') {
                         foreach($record in $prop.Value) {
                             foreach($subRecord in $record.Identifiers) {
-                                [void]$itemResult.UsersManagers.Add([PSCustomObject]@{ "UserID" = $row.UserID; "Index" = $record.Index; "ID" = $subRecord.ID; "Type" = $subRecord.Type; })
+                                [void]$itemResult.subResultUsersManagers.Add([PSCustomObject]@{ "UserID" = $row.UserID; "Index" = $record.Index; "ID" = $subRecord.ID; "Type" = $subRecord.Type; })
                             }
+                        }
+                        continue
+                    }
+
+                    if($prop.Name -eq 'ExternalIdentifiers') {
+                        foreach($record in $prop.Value) {
+                                [void]$itemResult.subResultExternalIdentifiers.Add([PSCustomObject]@{ "UserID" = $row.UserID; "Identifier" = $row.Identifier; "IdentifierType" = $record.IdentifierType; "IsActive" = $record.IsActive; })
+                        }
+                        continue
+                    }
+
+                    if($prop.Name -eq 'IdentityIDs') {
+                        foreach($record in $prop.Value) {
+                                [void]$itemResult.subResultIdentityIDs.Add([PSCustomObject]@{ "UserID" = $row.UserID; "ID" = $record.ID; "Type" = $record.Type; })
+                        }
+                        continue
+                    }
+
+                    if($prop.Name -eq 'DefaultLoginDepartmentID') {
+                        foreach($record in $prop.Value) {
+                                [void]$itemResult.subResultDefaultLoginDepartmentIDs.Add([PSCustomObject]@{ "UserID" = $row.UserID; "ID" = $record.ID; "Type" = $record.Type; })
                         }
                         continue
                     }
@@ -694,6 +737,10 @@ function Idm-UserInfosRead {
             [void]$Global:UserInfo_LinkedTemplatesConfig.Add($output.subResultLinkedTemplatesConfig)
             [void]$Global:UserInfo_UserSubtemplateIDs.Add($output.subResultUserSubtemplateIDs)
             [void]$Global:UserInfo_LinkedProviderID.Add($output.subResultLinkedProviderID)
+            [void]$Global:UserInfo_UsersManagers.Add($output.subResultUsersManagers)
+            [void]$Global:UserInfo_ExternalIdentifiers.Add($output.subResultExternalIdentifiers)
+            [void]$Global:UserInfo_IdentityIDs.Add($output.subResultIdentityIDs)
+            [void]$Global:UserInfo_DefaultLoginDepartmentIDs.Add($output.subResultDefaultLoginDepartmentIDs)
 
             $r.Pipe.Dispose()
         }
@@ -1415,6 +1462,84 @@ function Idm-UserInfo_UsersManagersRead {
         }
 
         $Global:UserInfo_UserManagers
+}
+
+function Idm-UserInfo_ExternalIdentifiersRead {
+    param (
+        # Mode
+        [switch] $GetMeta,    
+        # Parameters
+        [string] $SystemParams,
+        [string] $FunctionParams
+
+    )
+        $system_params   = ConvertFrom-Json2 $SystemParams
+        $function_params = ConvertFrom-Json2 $FunctionParams
+        $Class = 'UserInfo_ExternalIdentifier'
+        
+        if ($GetMeta) {
+            Get-ClassMetaData -SystemParams $SystemParams -Class $Class
+            return
+        }
+
+        # Refresh cache if needed
+        if ($Global:UserInfo.Count -eq 0) {
+            Idm-UserInfosRead -SystemParams $SystemParams -FunctionParams $FunctionParams | Out-Null
+        }
+
+        $Global:UserInfo_ExternalIdentifiers
+}
+
+function Idm-UserInfo_IdentityIDsRead {
+    param (
+        # Mode
+        [switch] $GetMeta,    
+        # Parameters
+        [string] $SystemParams,
+        [string] $FunctionParams
+
+    )
+        $system_params   = ConvertFrom-Json2 $SystemParams
+        $function_params = ConvertFrom-Json2 $FunctionParams
+        $Class = 'UserInfo_IdentityID'
+        
+        if ($GetMeta) {
+            Get-ClassMetaData -SystemParams $SystemParams -Class $Class
+            return
+        }
+
+        # Refresh cache if needed
+        if ($Global:UserInfo.Count -eq 0) {
+            Idm-UserInfosRead -SystemParams $SystemParams -FunctionParams $FunctionParams | Out-Null
+        }
+
+        $Global:UserInfo_IdentityIDs
+}
+
+function Idm-UserInfo_DefaultLoginDepartmentIDsRead {
+    param (
+        # Mode
+        [switch] $GetMeta,    
+        # Parameters
+        [string] $SystemParams,
+        [string] $FunctionParams
+
+    )
+        $system_params   = ConvertFrom-Json2 $SystemParams
+        $function_params = ConvertFrom-Json2 $FunctionParams
+        $Class = 'UserInfo_DefaultLoginDepartmentID'
+        
+        if ($GetMeta) {
+            Get-ClassMetaData -SystemParams $SystemParams -Class $Class
+            return
+        }
+
+        # Refresh cache if needed
+        if ($Global:UserInfo.Count -eq 0) {
+            Idm-UserInfosRead -SystemParams $SystemParams -FunctionParams $FunctionParams | Out-Null
+        }
+
+        $Global:UserInfo_DefaultLoginDepartmentIDs
 }
 
 function Idm-UserPagersRead {
