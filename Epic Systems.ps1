@@ -7,7 +7,9 @@ $Log_MaskableKeys = @(
     "proxy_password"
 )
 
-$Global:User = [System.Collections.ArrayList]@()
+$Global:Users = [System.Collections.ArrayList]@()
+$Global:UserGroups = [System.Collections.ArrayList]@()
+$Global:Groups = [System.Collections.ArrayList]@()
 $Global:UserInfo = [System.Collections.ArrayList]@()
 $Global:UserInfo_UserIDs = [System.Collections.ArrayList]@()
 $Global:UserInfo_UserRoleIDs = [System.Collections.ArrayList]@()
@@ -29,9 +31,13 @@ $Properties = @{
         @{ name = 'EnRolRank';       type = 'string';   objectfields = $null;             options = @('default') },
         @{ name = 'Status';          type = 'string';   objectfields = $null;             options = @('default') }
     )
+    Group = @(
+        @{ name = 'ID';              type = 'string';   objectfields = $null;             options = @('default','key') }
+    )
     UserGroup = @(
-        @{ name = 'UserID';              type = 'string';   objectfields = $null;             options = @('default') },
-        @{ name = 'Group';              type = 'string';   objectfields = $null;             options = @('default') }
+        @{ name = 'UserID';              type = 'string';   objectfields = $null;             options = @('default','add_m','remove_m') },
+        @{ name = 'Group';              type = 'string';   objectfields = $null;             options = @('default','add_m','remove_m') },
+        @{ name = 'UserType';              type = 'string';   objectfields = $null;             options = @('add','delete','add_o','remove_o') }
     )
     UserInfo = @(
         @{ name = 'UserID';            type = 'string';   objectfields = $null;             options = @('default','key','create_m') },
@@ -288,6 +294,8 @@ function Idm-UsersRead {
         [string] $FunctionParams
 
     )
+        Log verbose "-GetMeta=$GetMeta -SystemParams='$SystemParams' -FunctionParams='$FunctionParams'"    
+        
         $system_params   = ConvertFrom-Json2 $SystemParams
         $function_params = ConvertFrom-Json2 $FunctionParams
         $Class = 'User'
@@ -298,8 +306,8 @@ function Idm-UsersRead {
         }
 
         # Refresh cache if needed
-        if ($script:User.Count -eq 0) {
-            $Global:User.Clear()
+        if ($Global:Users.Count -eq 0) {
+            $Global:Users.Clear()
             $properties = Get-ClassProperties -Class $Class -IncludeHidden $true
 
             # Initial empty SearchStateContext
@@ -371,7 +379,7 @@ function Idm-UsersRead {
                         }
                     }
                     $i++
-                    [void]$Global:User.Add($row)  # Output immediately
+                    [void]$Global:Users.Add($row)  # Output immediately
                 }
 
                 # Update SearchStateContext for next page
@@ -385,11 +393,11 @@ function Idm-UsersRead {
                 # Continue if any values are non-empty
                 $hasMore = ($searchStateContext.Identifier -or $searchStateContext.ResumeInfo -or $searchStateContext.CriteriaHash)
 #break
-#if($i -ge 50) { break }
+#if($i -ge 150) { break }
             } while ($hasMore)
         }
         
-        $Global:User
+        $Global:Users
 }
 
 function Idm-UserGroupsRead {
@@ -401,6 +409,8 @@ function Idm-UserGroupsRead {
         [string] $FunctionParams
 
     )
+        Log verbose "-GetMeta=$GetMeta -SystemParams='$SystemParams' -FunctionParams='$FunctionParams'"    
+        
         $system_params   = ConvertFrom-Json2 $SystemParams
         $function_params = ConvertFrom-Json2 $FunctionParams
         $Class = 'UserGroup'
@@ -438,7 +448,7 @@ function Idm-UserGroupsRead {
 
         $funcDef = "function Execute-Request { $((Get-Command Execute-Request -CommandType Function).ScriptBlock.ToString()) }"
 
-        foreach ($item in $Global:User) {
+        foreach ($item in $Global:Users) {
             if ($Global:CancellationSource.IsCancellationRequested) {
                 Log warning "Execution canceled due to 503 error. Skipping remaining runspaces."
                 break
@@ -501,8 +511,9 @@ function Idm-UserGroupsRead {
             if($null -ne $output.logMessage) {
                 Log verbose $output.logMessage
             }
-
+            
             $result += $output.rows
+            [void]$Global:UserGroups.AddRange(@() + $output.rows)
 
             $r.Pipe.Dispose()
         }
@@ -514,6 +525,207 @@ function Idm-UserGroupsRead {
         $result
 }
 
+function Idm-UserGroupsAdd {
+    param (
+        # Operations
+        [switch] $GetMeta,
+        # Parameters
+        [string] $SystemParams,
+        [string] $FunctionParams
+    )
+
+    Log verbose "-GetMeta=$GetMeta -SystemParams='$SystemParams' -FunctionParams='$FunctionParams'"
+    $Class = 'UserGroup'
+
+    if ($GetMeta) {
+        #
+        # Get meta data
+        #
+        @{
+            semantics = 'create'
+            parameters = @(
+                $Global:Properties.$Class |
+                    Where-Object { $_.options -contains 'add_m' } |
+                    ForEach-Object { @{ name = $_.name; allowance = 'mandatory' } }
+
+                $Global:Properties.$Class |
+                    Where-Object { $_.options -contains 'add_o' } |
+                    ForEach-Object {
+                        if($_.Type -eq 'object') {
+                            foreach($field in $_.objectfields) {
+                                @{ name = "$($_.name)_$($field)"; allowance = 'optional' }
+                            }
+                        } else {
+                            @{ name = $_.name; allowance = 'optional' }
+                        }
+                    }
+
+                $Global:Properties.$Class |
+                    Where-Object { -not ($_.options -contains 'add_m' -or $_.options -contains 'add_o') } |
+                    ForEach-Object {
+                        if($_.Type -eq 'object') {
+                            foreach($field in $_.objectfields) {
+                                @{ name = "$($_.name)_$($field)"; allowance = 'prohibited' }
+                            }
+                        } else {
+                            @{ name = $_.name; allowance = 'prohibited' }
+                        }
+                    }
+            )
+        }
+
+    }
+    else {
+        #
+        # Execute function
+        #
+        $system_params   = ConvertFrom-Json2 $SystemParams
+        $function_params = ConvertFrom-Json2 $FunctionParams
+
+        $uri = "/api/epic/2016/Security/PersonnelManagement/UpdateUserGroups/Personnel/User/Groups/Update"
+
+        $splat = @{
+            SystemParams = $system_params
+            Method = "POST"
+            Uri = $uri
+                    Body = @{ Append = $true; UserGroups = @() + $function_params.Group; UserID = @{ ID = $function_params.UserID; Type = $function_params.UserType  }} | ConvertTo-Json
+                    Class = $Class
+                    LogMessage = "[UserID: $($function_params.UserID) Group: $($function_params.Group)]"
+                    LoggingEnabled = $false
+        }
+        Execute-Request @splat
+
+        LogIO info "UserGroup-Add" -out $result
+        
+        #Result
+        @{
+            UserID = $function_params.UserID
+            Group = $function_params.Group
+        }
+    }
+
+    Log verbose "Done"
+}
+
+function Idm-UserGroupsRemove {
+    param (
+        # Operations
+        [switch] $GetMeta,
+        # Parameters
+        [string] $SystemParams,
+        [string] $FunctionParams
+    )
+
+    Log verbose "-GetMeta=$GetMeta -SystemParams='$SystemParams' -FunctionParams='$FunctionParams'"
+    $Class = 'UserGroup'
+
+    if ($GetMeta) {
+        #
+        # Get meta data
+        #
+        @{
+            semantics = 'delete'
+            parameters = @(
+                $Global:Properties.$Class |
+                    Where-Object { $_.options -contains 'remove_m' -or $_.options -contains 'key'} |
+                    ForEach-Object { @{ name = $_.name; allowance = 'mandatory' } }
+
+                $Global:Properties.$Class |
+                    Where-Object { $_.options -contains 'remove_o' } |
+                    ForEach-Object {
+                        if($_.Type -eq 'object') {
+                            foreach($field in $_.objectfields) {
+                                @{ name = "$($_.name)_$($field)"; allowance = 'optional' }
+                            }
+                        } else {
+                            @{ name = $_.name; allowance = 'optional' }
+                        }
+                    }
+
+                $Global:Properties.$Class |
+                    Where-Object { -not ($_.options -contains 'remove_m' -or $_.options -contains 'remove_o' -or $_.options -contains 'key') } |
+                    ForEach-Object {
+                        if($_.Type -eq 'object') {
+                            foreach($field in $_.objectfields) {
+                                @{ name = "$($_.name)_$($field)"; allowance = 'prohibited' }
+                            }
+                        } else {
+                            @{ name = $_.name; allowance = 'prohibited' }
+                        }
+                    }
+            )
+        }
+
+    }
+    else {
+        #
+        # Execute function
+        #
+        $system_params   = ConvertFrom-Json2 $SystemParams
+        $function_params = ConvertFrom-Json2 $FunctionParams
+
+        $uri = "/api/epic/2016/Security/PersonnelManagement/UpdateUserGroups/Personnel/User/Groups/Update"
+
+        # Get Current Groups
+        $splat = @{
+                    SystemParams = $system_params
+                    Method = "POST"
+                    Uri = '/api/epic/2016/Security/PersonnelManagement/ViewUserGroups/Personnel/User/Groups/View'
+                    Body = (@{ "UserID" = @{ "ID" = $function_params.UserID; "Type" = $function_params.UserType }}) | ConvertTo-Json
+                    Class = $Class
+                    LogMessage = "[$($item.ID)]"
+                    LoggingEnabled = $false
+                }
+        $currentGroups = (Execute-Request @splat).UserGroups
+
+        $newGroups = $currentGroups | Where-Object { $_ -ne $function_params.Group }
+
+        $splat = @{
+            SystemParams = $system_params
+            Method = "POST"
+            Uri = $uri
+                    Body = @{ UserGroups = @() + $newGroups; UserID = @{ ID = $function_params.UserID; Type = $function_params.UserType  }} | ConvertTo-Json
+                    Class = $Class
+                    LogMessage = "[UserID: $($function_params.UserID) Group: $($function_params.Group)]"
+                    LoggingEnabled = $false
+        }
+        Execute-Request @splat
+
+        LogIO info "UserGroup-Delete" -out $result
+    }
+
+    Log verbose "Done"
+}
+
+function Idm-GroupsRead {
+    param (
+        # Mode
+        [switch] $GetMeta,    
+        # Parameters
+        [string] $SystemParams,
+        [string] $FunctionParams
+
+    )
+        $system_params   = ConvertFrom-Json2 $SystemParams
+        $function_params = ConvertFrom-Json2 $FunctionParams
+        $Class = 'Group'
+        
+        if ($GetMeta) {
+            Get-ClassMetaData -SystemParams $SystemParams -Class $Class
+            return
+        }
+
+        # Refresh cache if needed
+        if ($Global:UserGroups.Count -eq 0) {
+            Idm-UserGroupsRead -SystemParams $SystemParams -FunctionParams $FunctionParams | Out-Null
+        }
+
+        $Global:UserGroups |
+            Select-Object -ExpandProperty Group |   # pull out just the Group values
+            Sort-Object -Unique |                   # ensure uniqueness
+            ForEach-Object { [PSCustomObject]@{ ID = $_ } }
+}
+
 function Idm-UserInfosRead {
     param (
         # Mode
@@ -523,6 +735,8 @@ function Idm-UserInfosRead {
         [string] $FunctionParams
 
     )
+        Log verbose "-GetMeta=$GetMeta -SystemParams='$SystemParams' -FunctionParams='$FunctionParams'"
+    
         $system_params   = ConvertFrom-Json2 $SystemParams
         $function_params = ConvertFrom-Json2 $FunctionParams
         $Class = 'UserInfo'
@@ -571,7 +785,7 @@ function Idm-UserInfosRead {
 
         $funcDef = "function Execute-Request { $((Get-Command Execute-Request -CommandType Function).ScriptBlock.ToString()) }"
 
-        foreach ($item in $Global:User) {
+        foreach ($item in $Global:Users) {
             $runspace = [powershell]::Create().AddScript($funcDef).AddScript({
                 param($item, $system_params, $Class, $template, $index, $properties, $propertiesHT)
                 
@@ -730,7 +944,7 @@ function Idm-UserInfosRead {
                 Log verbose $output.logMessage
             }
             
-            $output.result
+            $output.result | Select-Object $function_params.properties
             [void]$Global:UserInfo.AddRange(@() + $output.result)
             [void]$Global:UserInfo_UserIDs.Add($output.subResultUserIDs)
             [void]$Global:UserInfo_UserRoleIDs.Add($output.subResultUserRoleIDs)
@@ -1588,7 +1802,7 @@ function Idm-UserPagersRead {
 
         $funcDef = "function Execute-Request { $((Get-Command Execute-Request -CommandType Function).ScriptBlock.ToString()) }"
 
-        foreach ($item in $Global:User) {
+        foreach ($item in $Global:Users) {
             if ($Global:CancellationSource.IsCancellationRequested) {
                 Log warning "Execution canceled due to 503 error. Skipping remaining runspaces."
                 break
