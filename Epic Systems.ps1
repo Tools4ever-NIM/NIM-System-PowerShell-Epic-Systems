@@ -41,7 +41,7 @@ $Properties = @{
     )
     UserInfo = @(
         @{ name = 'UserID';            type = 'string';   objectfields = $null;             options = @('default','key','create_m') },
-        @{ name = 'UserType';            type = 'string';   objectfields = $null;             options = @('update_m','forcepwd_o','activate_o','inactivate_o','setpwd_o') },
+        @{ name = 'UserType';            type = 'string';   objectfields = $null;             options = @('update_o','forcepwd_o','activate_o','inactivate_o','setpwd_o') },
         @{ name = 'Name';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
         @{ name = 'ContactComment';            type = 'string';   objectfields = $null;             options = @('default','create_o','update_o') },
         @{ name = 'ContactDate';            type = 'string';   objectfields = $null;             options = @('default','create_o','update_o') },
@@ -66,7 +66,7 @@ $Properties = @{
         @{ name = 'InBasketClassifications';            type = 'string';   objectfields = $null;             options = @('default','create_o','update_o') },
         @{ name = 'UserDirectoryPath';            type = 'string';   objectfields = $null;             options = @('default') },
         @{ name = 'ProviderAtLoginOption';            type = 'string';   objectfields = $null;             options = @('default','create_o','update_o') },
-        @{ name = 'UserComplexName';            type = 'object';   objectfields = @('FirstName','GivenNameInitials','MiddleName','LastName','LastNamePrefix','SpouseLastName','SpousePrefix','Suffix','AcademicTitle','PrimaryTitle','SpouseLastNameFirst','FatherName','GrandfatherName');             options = @('default','create_o','update_o') },
+        @{ name = 'UserComplexName';            type = 'object';   objectfields = @('FirstName','GivenNameInitials','MiddleName','LastName','LastNamePrefix','SpouseLastName','SpousePrefix','Suffix','AcademicTitle','PrimaryTitle','SpouseLastNameFirst','FatherName','GrandfatherName');             options = @('default','create_o','updatenames_m') },
         @{ name = 'AuthenticationConfigurationID';            type = 'string';   objectfields = $null;             options = @('default','create_o') },
         @{ name = 'BlockStatus';            type = 'object';   objectfields = @('IsBlocked','Reason','Comment');             options = @('default','create_o','update_o') },
         @{ name = 'EmployeeDemographics';            type = 'string';   objectfields = $null;             options = @('default') },
@@ -137,6 +137,7 @@ $Properties = @{
 #
 # System functions
 #
+
 function Idm-SystemInfo {
     param (
         # Operations
@@ -188,7 +189,7 @@ function Idm-SystemInfo {
                 type = 'checkbox'
                 label = 'Use Proxy'
                 description = 'Use Proxy server for requests'
-                value = $false # Default value of checkbox item
+                value = $false
             }
             @{
                 name = 'proxy_address'
@@ -278,6 +279,7 @@ function Idm-SystemInfo {
     Log info "Done"
 }
 
+
 function Idm-OnUnload {
 }
 
@@ -292,7 +294,6 @@ function Idm-UsersRead {
         # Parameters
         [string] $SystemParams,
         [string] $FunctionParams
-
     )
         Log verbose "-GetMeta=$GetMeta -SystemParams='$SystemParams' -FunctionParams='$FunctionParams'"    
         
@@ -392,8 +393,6 @@ function Idm-UsersRead {
 
                 # Continue if any values are non-empty
                 $hasMore = ($searchStateContext.Identifier -or $searchStateContext.ResumeInfo -or $searchStateContext.CriteriaHash)
-#break
-#if($i -ge 150) { break }
             } while ($hasMore)
         }
         
@@ -1087,27 +1086,152 @@ function Idm-UserInfoUpdate {
         $system_params   = ConvertFrom-Json2 $SystemParams
         $function_params = ConvertFrom-Json2 $FunctionParams
 
-        $uri = "/api/epic/2012/Security/PersonnelManagement/ForcePasswordChange/Personnel/User/Update?UserID=$($function_params.UserID)"
+        $uri = "/api/epic/2014/Security/PersonnelManagement/UpdateUser/Personnel/User"
         
+        $updateBody = @{ UserID = $function_params.UserID; Items = @() }
 
-        foreach($property in $function_params) {
-            #Loop over each property specified, add to query parameters
+        if ($function_params.Keys -like "BlockStatus_*") {
+            $updateBody['BlockStatus'] = @{}
         }
-        
-        
+
+        foreach ($prop in $function_params.Keys) {
+            if($prop -eq "UserID") { continue }
+
+            if ($prop.StartsWith('BlockStatus_')) {
+                $updateBody['BlockStatus'][$prop.Replace("BlockStatus_", "")] = $function_params[$prop]
+                $updateBody['Items'] += @{ Method = 'Replace'; Name = 'BlockStatus' }
+                continue
+            }
+
+            $updateBody[$prop] = $function_params[$prop]
+            $updateBody['Items'] += @{ Method = 'Replace'; Name = $prop}
+        }
+
+        # Convert hashtable to PSCustomObject just before JSON
+        $jsonBody = $updateBody | ConvertTo-Json -Depth 5
+
+        # Build splat with JSON body
         $splat = @{
-            SystemParams = $system_params
-            Method = "POST"
-            Uri = $uri
-                    Body = $null
-                    Class = $Class
-                    LogMessage = "[UserID: $($function_params.UserID) Type: $($function_params.UserType)]"
-                    LoggingEnabled = $false
+            SystemParams   = $system_params
+            Method         = "POST"
+            Uri            = $uri
+            Body           = $jsonBody
+            Class          = $Class
+            LogMessage     = "[UserID: $($function_params.UserID) Type: $($function_params.UserType)]"
+            LoggingEnabled = $false
         }
+
+
         Execute-Request @splat
 
-        LogIO info "User-Update" -out $result
-        $result
+        LogIO info "User-Update" -out $function_params
+        $function_params
+    }
+
+    Log verbose "Done"
+}
+
+function Idm-UserInfoUpdatenames {
+    param (
+        # Operations
+        [switch] $GetMeta,
+        # Parameters
+        [string] $SystemParams,
+        [string] $FunctionParams
+    )
+
+    Log verbose "-GetMeta=$GetMeta -SystemParams='$SystemParams' -FunctionParams='$FunctionParams'"
+    $Class = 'UserInfo'
+
+    if ($GetMeta) {
+        #
+        # Get meta data
+        #
+        @{
+            parameters = @(
+                $Global:Properties.$Class |
+                    Where-Object { $_.options -contains 'updatenames_m' -or $_.options -contains 'key' } |
+                    ForEach-Object {
+                        if($_.Type -eq 'object') {
+                            foreach($field in $_.objectfields) {
+                                @{ name = "$($_.name)_$($field)"; allowance = 'mandatory' }
+                            }
+                        } else {
+                            @{ name = $_.name; allowance = 'mandatory' }
+                        }
+                    }
+
+                $Global:Properties.$Class |
+                    Where-Object { $_.options -contains 'updatenames_o' } |
+                    ForEach-Object {
+                        if($_.Type -eq 'object') {
+                            foreach($field in $_.objectfields) {
+                                @{ name = "$($_.name)_$($field)"; allowance = 'optional' }
+                            }
+                        } else {
+                            @{ name = $_.name; allowance = 'optional' }
+                        }
+                    }
+
+                $Global:Properties.$Class |
+                    Where-Object { -not ($_.options -contains 'updatenames_m' -or $_.options -contains 'updatenames_o' -or $_.options -contains 'key') } |
+                    ForEach-Object {
+                        if($_.Type -eq 'object') {
+                            foreach($field in $_.objectfields) {
+                                @{ name = "$($_.name)_$($field)"; allowance = 'prohibited' }
+                            }
+                        } else {
+                            @{ name = $_.name; allowance = 'prohibited' }
+                        }
+                    }
+            )
+        }
+
+    }
+    else {
+        #
+        # Execute function
+        #
+        $system_params   = ConvertFrom-Json2 $SystemParams
+        $function_params = ConvertFrom-Json2 $FunctionParams
+
+        $uri = "/api/epic/2014/Security/PersonnelManagement/UpdateUser/Personnel/User"
+        
+        $updateBody = @{ UserID = $function_params.UserID; Items = @() }
+
+        if ($function_params.Keys -like "UserComplexName_*") {
+            $updateBody['UserComplexName'] = @{}
+        }
+
+        foreach ($prop in $function_params.Keys) {
+            if($prop -eq "UserID") { continue }
+
+            if ($prop.StartsWith('UserComplexName_')) {
+                $updateBody['UserComplexName'][$prop.Replace("UserComplexName_", "")] = $function_params[$prop]
+                $updateBody['Items'] += @{ Method = 'Replace'; Name = 'UserComplexName' }
+                continue
+            }
+        }
+
+        # Convert hashtable to PSCustomObject just before JSON
+        $jsonBody = $updateBody | ConvertTo-Json -Depth 5
+
+        # Build splat with JSON body
+        $splat = @{
+            SystemParams   = $system_params
+            Method         = "POST"
+            Uri            = $uri
+            Body           = $jsonBody
+            Class          = $Class
+            LogMessage     = "[UserID: $($function_params.UserID) Type: $($function_params.UserType)]"
+            LoggingEnabled = $false
+        }
+
+
+        Execute-Request @splat
+
+        LogIO info "User-UpdateNames" -out $function_params
+        $function_params
     }
 
     Log verbose "Done"
